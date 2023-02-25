@@ -12,7 +12,7 @@ CREATE TABLE RegisteredUsers (
     userID INTEGER NOT NULL,
     firstName CHAR(25) NOT NULL,
     lastName CHAR(25) NOT NULL,
-    email UNIQUE CHAR(25) NOT NULL,
+    email CHAR(25) UNIQUE NOT NULL,
     dateOfBirth Date,
     hometown CHAR(25),
     gender CHAR(25),
@@ -32,7 +32,7 @@ CREATE TABLE Friends (
     firstName CHAR(25) NOT NULL,
     lastName CHAR(25) NOT NULL,
     FOREIGN KEY (friendID) REFERENCES RegisteredUsers(userID),
-    FOREIGN KEY (firstName) REFERENCES RegisteredUsers(firstName)
+    FOREIGN KEY (firstName) REFERENCES RegisteredUsers(firstName),
     FOREIGN KEY (lastName) REFERENCES RegisteredUsers(lastName)
 );
 
@@ -41,7 +41,7 @@ CREATE TABLE Albums (
     albumName CHAR(25),
     ownerID CHAR(25),
     dateOfCreation Date,
-    numPhotos INTEGER
+    numPhotos INTEGER,
     PRIMARY KEY (albumID),
 		CHECK (numOfLiked >= 0)
 );
@@ -49,7 +49,7 @@ CREATE TABLE Albums (
 CREATE TABLE Photos (
     photoID INTEGER NOT NULL,
     caption CHAR(225),
-    photoData VARBINARY(66635)
+    photoData VARBINARY(66635),
     PRIMARY KEY (photoID)
 );
 
