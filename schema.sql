@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS photoDatabase;
-USE photoDatabase;
+CREATE DATABASE IF NOT EXISTS photoshare;
+USE photoshare;
 DROP TABLE IF EXISTS RegisteredUsers CASCADE;
 DROP TABLE IF EXISTS UnregisteredUsers CASCADE;
 DROP TABLE IF EXISTS Friends CASCADE;
@@ -12,11 +12,11 @@ CREATE TABLE RegisteredUsers (
     userID INTEGER NOT NULL,
     firstName CHAR(25) NOT NULL,
     lastName CHAR(25) NOT NULL,
-    email CHAR(25) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
     dateOfBirth Date,
     hometown CHAR(25),
     gender CHAR(25),
-    userPassword CHAR(25) NOT NULL,
+    userPassword VARCHAR(25) NOT NULL,
     contributionScore INTEGER,
     PRIMARY KEY (userID, email),
 		CHECK (contributionScore >= 0)
@@ -31,6 +31,7 @@ CREATE TABLE Friends (
     friendID INTEGER NOT NULL,
     firstName CHAR(25) NOT NULL,
     lastName CHAR(25) NOT NULL,
+    PRIMARY KEY (friendID),
     FOREIGN KEY (friendID) REFERENCES RegisteredUsers(userID),
     FOREIGN KEY (firstName) REFERENCES RegisteredUsers(firstName),
     FOREIGN KEY (lastName) REFERENCES RegisteredUsers(lastName)
@@ -49,7 +50,7 @@ CREATE TABLE Albums (
 CREATE TABLE Photos (
     photoID INTEGER NOT NULL,
     caption CHAR(225),
-    photoData VARBINARY(66635),
+    photoData longblob,
     PRIMARY KEY (photoID)
 );
 
