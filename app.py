@@ -64,10 +64,10 @@ def request_loader(request):
 	user = User()
 	user.id = email
 	cursor = mysql.connect().cursor()
-	cursor.execute("SELECT password FROM RegisteredUsers WHERE email = '{0}'".format(email))
+	cursor.execute("SELECT userPassword FROM RegisteredUsers WHERE email = '{0}'".format(email))
 	data = cursor.fetchall()
 	pwd = str(data[0][0] )
-	user.is_authenticated = request.form['password'] == pwd
+	user.is_authenticated = request.form['userPassword'] == pwd
 	return user
 
 '''
@@ -92,10 +92,10 @@ def login():
 	email = flask.request.form['email']
 	cursor = conn.cursor()
 	#check if email is registered
-	if cursor.execute("SELECT password FROM RegisteredUsers WHERE email = '{0}'".format(email)):
+	if cursor.execute("SELECT userPassword FROM RegisteredUsers WHERE email = '{0}'".format(email)):
 		data = cursor.fetchall()
 		pwd = str(data[0][0] )
-		if flask.request.form['password'] == pwd:
+		if flask.request.form['userPassword'] == pwd:
 			user = User()
 			user.id = email
 			flask_login.login_user(user) #okay login in user
@@ -126,15 +126,26 @@ def register():
 @app.route("/register", methods=['POST'])
 def register_user():
 	try:
+		c1 = conn.cursor()
+		c1.execute("SELECT COUNT(*) FROM RegisteredUsers")
+		result = c1.fetchone()
+		userID = result[0]
+		
+		firstName = request.form.get('firstName')
+		lastName = request.form.get('lastName')
 		email=request.form.get('email')
-		password=request.form.get('password')
+		dateOfBirth =request.form.get('dateOfBirth')
+		hometown =request.form.get('hometown')
+		gender=request.form.get('gender')
+		userPassword=request.form.get('userPassword')	
 	except:
 		print("couldn't find all tokens") #this prints to shell, end users will not see this (all print statements go to shell)
 		return flask.redirect(flask.url_for('register'))
 	cursor = conn.cursor()
 	test =  isEmailUnique(email)
 	if test:
-		print(cursor.execute("INSERT INTO RegisteredUsers (email, password) VALUES ('{0}', '{1}')".format(email, password)))
+		print(cursor.execute("INSERT INTO RegisteredUsers (userID, firstName, lastName, email, dateOfBirth, hometown, gender, userPassword) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}')"
+		       .format(userID, firstName, lastName, email, dateOfBirth, hometown, gender, userPassword)))
 		conn.commit()
 		#log user in
 		user = User()
@@ -147,12 +158,12 @@ def register_user():
 
 def getUsersPhotos(uid):    
 	cursor = conn.cursor()
-	cursor.execute("SELECT imgdata, picture_id, caption FROM Pictures WHERE userID = '{0}'".format(uid))
-	return cursor.fetchall() #NOTE return a list of tuples, [(imgdata, pid, caption), ...]
+	cursor.execute("SELECT photoData, photoID, caption FROM Pictures WHERE userID = '{0}'".format(uid))
+	return cursor.fetchall() #NOTE return a list of tuples, [(photoData, pid, caption), ...]
 
 def getUserIdFromEmail(email):
 	cursor = conn.cursor()
-	cursor.execute("SELECT userID  FROM RegisteredUsers WHERE email = '{0}'".format(email))
+	cursor.execute("SELECT userID FROM RegisteredUsers WHERE email = '{0}'".format(email))
 	return cursor.fetchone()[0]
 
 def isEmailUnique(email):
@@ -185,7 +196,7 @@ def upload_file():
 		caption = request.form.get('caption')
 		photo_data =imgfile.read()
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Pictures (imgdata, userID, caption) VALUES (%s, %s, %s )''', (photo_data, uid, caption))
+		cursor.execute('''INSERT INTO Pictures (photoData, userID, caption) VALUES (%s, %s, %s )''', (photo_data, uid, caption))
 		conn.commit()
 		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(uid), base64=base64)
 	#The method is GET so we return a  HTML form to upload the a photo.
