@@ -1,5 +1,5 @@
 import flask
-from flask import Flask, Blueprint, Response, request, render_template, redirect, url_for
+from flask import Flask, flash, Response, request, render_template, redirect, url_for
 from flaskext.mysql import MySQL
 import flask_login
 
@@ -128,8 +128,7 @@ def register_user():
 	try:
 		c1 = conn.cursor()
 		c1.execute("SELECT COUNT(*) FROM RegisteredUsers")
-		result = c1.fetchone()
-		userID = result[0]
+		userID = c1.fetchone()[0]
 		
 		firstName = request.form.get('firstName')
 		lastName = request.form.get('lastName')
@@ -154,6 +153,7 @@ def register_user():
 		return render_template('hello.html', name=email, message='Account Created!')
 	else:
 		print("couldn't find all tokens")
+		flash("This email has already been used. Please login with that email or create a new account using a different email")
 		return flask.redirect(flask.url_for('register'))
 
 def getUsersPhotos(uid):    
