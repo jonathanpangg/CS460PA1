@@ -112,6 +112,8 @@ def logout():
 
 @app.route('/friends', methods=['GET'])
 def friends():
+	# cursor = conn.cursor()
+	# cursor.execute("SELECT friends")
 	return render_template('friends.html', supress = 'True')
 
 @login_manager.unauthorized_handler

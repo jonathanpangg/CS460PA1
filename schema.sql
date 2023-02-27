@@ -27,26 +27,6 @@ CREATE TABLE UnregisteredUsers (
     PRIMARY KEY (newUserID)
 );
 
-CREATE TABLE Friends (
-    friendID INTEGER NOT NULL,
-    firstName CHAR(25) NOT NULL,
-    lastName CHAR(25) NOT NULL,
-    PRIMARY KEY (friendID),
-    FOREIGN KEY (friendID) REFERENCES RegisteredUsers(userID),
-    FOREIGN KEY (firstName) REFERENCES RegisteredUsers(firstName),
-    FOREIGN KEY (lastName) REFERENCES RegisteredUsers(lastName)
-);
-
-CREATE TABLE Albums (
-    albumID INTEGER NOT NULL,
-    albumName CHAR(25),
-    ownerID CHAR(25),
-    dateOfCreation Date,
-    numPhotos INTEGER,
-    PRIMARY KEY (albumID),
-		CHECK (numOfLiked >= 0)
-);
-
 CREATE TABLE Photos (
     photoID INTEGER NOT NULL,
     caption CHAR(225),
@@ -66,4 +46,24 @@ CREATE TABLE Comments (
     commentDate Date,
     PRIMARY KEY (commentID),
     FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID)
+);
+
+CREATE TABLE Albums (
+    albumID INTEGER NOT NULL,
+    albumName CHAR(25),
+    ownerID CHAR(25),
+    dateOfCreation Date,
+    numPhotos INTEGER,
+    PRIMARY KEY (albumID),
+		CHECK (numOfLiked >= 0)
+);
+
+CREATE TABLE Friends (
+    friendID INTEGER NOT NULL,
+    firstName CHAR(25) NOT NULL,
+    lastName CHAR(25) NOT NULL,
+  --   PRIMARY KEY (friendID),
+    FOREIGN KEY (friendID) REFERENCES RegisteredUsers(userID),
+    FOREIGN KEY (firstName) REFERENCES RegisteredUsers(firstName),
+    FOREIGN KEY (lastName) REFERENCES RegisteredUsers(lastName)
 );
