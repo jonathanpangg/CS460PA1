@@ -42,7 +42,7 @@ CREATE TABLE Tags (
 CREATE TABLE Comments (
     commentID INTEGER NOT NULL,
     textData TEXT(65535),
-    userID CHAR(25) NOT NULL,
+    userID INTEGER NOT NULL,
     commentDate Date,
     PRIMARY KEY (commentID),
     FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID)
@@ -54,16 +54,20 @@ CREATE TABLE Albums (
     ownerID CHAR(25),
     dateOfCreation Date,
     numPhotos INTEGER,
+    numOfLiked INTEGER,
     PRIMARY KEY (albumID),
 		CHECK (numOfLiked >= 0)
 );
 
 CREATE TABLE Friends (
+	userID INTEGER NOT NULL, 
     friendID INTEGER NOT NULL,
     firstName CHAR(25) NOT NULL,
     lastName CHAR(25) NOT NULL,
   --   PRIMARY KEY (friendID),
+	FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID),
     FOREIGN KEY (friendID) REFERENCES RegisteredUsers(userID),
     FOREIGN KEY (firstName) REFERENCES RegisteredUsers(firstName),
-    FOREIGN KEY (lastName) REFERENCES RegisteredUsers(lastName)
+    FOREIGN KEY (lastName) REFERENCES RegisteredUsers(lastName),
+		CHECK (userID <> friendID)
 );
