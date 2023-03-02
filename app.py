@@ -97,12 +97,10 @@ def login():
 		pwd = str(data[0][0] )
 		print(pwd)
 		if flask.request.form['userPassword'] == pwd:
-			print("in loop")
 			user = User()
 			user.id = email
 			flask_login.login_user(user) #okay login in user
 			return flask.redirect(flask.url_for('protected')) #protected is a function defined in this file
-		print("Gets here")
 	#information did not match
 	return "<a href='/login'>Try again</a>\
 			</br><a href='/register'>or make an account</a>"
@@ -110,7 +108,7 @@ def login():
 @app.route('/logout')
 def logout():
 	flask_login.logout_user()
-	return render_template('hello.html', message='Logged out')
+	return render_template('loggedOut.html', message='Logged out')
 
 @app.route('/friends', methods=['GET'])
 @flask_login.login_required
@@ -228,7 +226,22 @@ def upload_file():
 #default page
 @app.route("/", methods=['GET'])
 def hello():
-	return render_template('hello.html', message='Welecome to Photoshare')
+	if User() is None:
+		return render_template('hello.html', message='Welecome to Photoshare')
+	return render_template('loggedOut.html', message='Welecome to Photoshare')
+
+@app.route("/photos")
+def photos():
+	if User() is None:
+		print("Need to show all photos")
+	userID = getUserIdFromEmail(flask_login.current_user.id)
+	me = getUsersPhotos(userID)
+	print(me[0][2])
+	return render_template('photos.html', photos = getUsersPhotos(userID), base64=base64)
+
+@app.route("/albums")
+def allAlbums():
+	return render_template('albums.html', messages = "These are all the public albums!")
 
 if __name__ == "__main__":
 	#this is invoked when in the shell  you run
