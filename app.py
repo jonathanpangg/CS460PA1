@@ -83,7 +83,7 @@ def login():
 		return '''
 			   <form action='login' method='POST'>
 				<input type='text' name='email' id='email' placeholder='email'></input>
-				<input type='password' name='password' id='password' placeholder='password'></input>
+				<input type='userPassword' name='userPassword' id='userPassword' placeholder='password'></input>
 				<input type='submit' name='submit'></input>
 			   </form></br>
 		   <a href='/'>Home</a>
@@ -95,12 +95,14 @@ def login():
 	if cursor.execute("SELECT userPassword FROM RegisteredUsers WHERE email = '{0}'".format(email)):
 		data = cursor.fetchall()
 		pwd = str(data[0][0] )
+		print(pwd)
 		if flask.request.form['userPassword'] == pwd:
+			print("in loop")
 			user = User()
 			user.id = email
 			flask_login.login_user(user) #okay login in user
 			return flask.redirect(flask.url_for('protected')) #protected is a function defined in this file
-
+		print("Gets here")
 	#information did not match
 	return "<a href='/login'>Try again</a>\
 			</br><a href='/register'>or make an account</a>"
