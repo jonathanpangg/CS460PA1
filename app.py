@@ -83,7 +83,7 @@ def login():
 		return '''
 			   <form action='login' method='POST'>
 				<input type='text' name='email' id='email' placeholder='email'></input>
-				<input type='userPassword' name='userPassword' id='userPassword' placeholder='password'></input>
+				<input type='password' name='password' id='password' placeholder='password'></input>
 				<input type='submit' name='submit'></input>
 			   </form></br>
 		   <a href='/'>Home</a>
@@ -95,12 +95,12 @@ def login():
 	if cursor.execute("SELECT userPassword FROM RegisteredUsers WHERE email = '{0}'".format(email)):
 		data = cursor.fetchall()
 		pwd = str(data[0][0] )
-		print(pwd)
 		if flask.request.form['userPassword'] == pwd:
 			user = User()
 			user.id = email
 			flask_login.login_user(user) #okay login in user
 			return flask.redirect(flask.url_for('protected')) #protected is a function defined in this file
+
 	#information did not match
 	return "<a href='/login'>Try again</a>\
 			</br><a href='/register'>or make an account</a>"
@@ -108,7 +108,16 @@ def login():
 @app.route('/logout')
 def logout():
 	flask_login.logout_user()
-	return render_template('loggedOut.html', message='Logged out')
+	return render_template('hello.html', message='Logged out')
+
+@app.route('/friends', methods=['GET'])
+@flask_login.login_required
+def friends():
+    if flask_login.current_user.id.is_authenticated():
+        flask.user = flask_login.current_user.get_id()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Friends WHERE userID = '{0}'".format(flask.user))
+    return render_template('friends.html', supress = 'True')
 
 @app.route('/friends', methods=['GET', 'POST'])
 @flask_login.login_required
@@ -127,7 +136,7 @@ def friends():
         cursor.execute("INSERT INTO Friends(userEmail, friendEmail) VALUES ('{0}', '{1}')".format(flask.user, friendID))
         conn.commit()
         return flask.redirect(flask.url_for('friends'), code = 303)
-
+    
 @login_manager.unauthorized_handler
 def unauthorized_handler():
 	return render_template('unauth.html')
@@ -172,7 +181,7 @@ def register_user():
 
 def getUsersPhotos(uid):    
 	cursor = conn.cursor()
-	cursor.execute("SELECT photoData, photoID, caption FROM Photos WHERE userID = '{0}'".format(uid))
+	cursor.execute("SELECT photoData, photoID, caption FROM Pictures WHERE userID = '{0}'".format(uid))
 	return cursor.fetchall() #NOTE return a list of tuples, [(photoData, pid, caption), ...]
 
 def getUserIdFromEmail(email):
@@ -205,18 +214,14 @@ def allowed_file(filename):
 @flask_login.login_required
 def upload_file():
 	if request.method == 'POST':
-		userID = getUserIdFromEmail(flask_login.current_user.id)
+		uid = getUserIdFromEmail(flask_login.current_user.id)
 		imgfile = request.files['photo']
 		caption = request.form.get('caption')
 		photo_data =imgfile.read()
-
-		c1 = conn.cursor()
-		c1.execute("SELECT COUNT(*) FROM Photos")
-		photoID = c1.fetchone()[0]
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData) VALUES (%s, %s, %s, %s )''', (photoID, userID, caption, photo_data))
+		cursor.execute('''INSERT INTO Pictures (photoData, userID, caption) VALUES (%s, %s, %s )''', (photo_data, uid, caption))
 		conn.commit()
-		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID), base64=base64)
+		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(uid), base64=base64)
 	#The method is GET so we return a  HTML form to upload the a photo.
 	else:
 		return render_template('upload.html')
@@ -225,22 +230,7 @@ def upload_file():
 #default page
 @app.route("/", methods=['GET'])
 def hello():
-	if User() is None:
-		return render_template('hello.html', message='Welecome to Photoshare')
-	return render_template('loggedOut.html', message='Welecome to Photoshare')
-
-@app.route("/photos")
-def photos():
-	if User() is None:
-		print("Need to show all photos")
-	userID = getUserIdFromEmail(flask_login.current_user.id)
-	me = getUsersPhotos(userID)
-	print(me[0][2])
-	return render_template('photos.html', photos = getUsersPhotos(userID), base64=base64)
-
-@app.route("/albums")
-def allAlbums():
-	return render_template('albums.html', messages = "These are all the public albums!")
+	return render_template('hello.html', message='Welecome to Photoshare')
 
 if __name__ == "__main__":
 	#this is invoked when in the shell  you run
