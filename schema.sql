@@ -62,11 +62,9 @@ CREATE TABLE Albums (
 
 -- To get first and last name, use a select statement with registered user and friend id
 CREATE TABLE Friends (
-	userID INTEGER NOT NULL, 
-    friendID INTEGER NOT NULL,
-    firstName CHAR(25) NOT NULL,
-    lastName CHAR(25) NOT NULL,
-	FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID),
-    FOREIGN KEY (friendID) REFERENCES RegisteredUsers(userID),
-		CHECK (userID <> friendID)
+	userEmail VARCHAR(225) NOT NULL,
+    friendEmail VARCHAR(225) NOT NULL,
+	FOREIGN KEY (userEmail) REFERENCES RegisteredUsers(email),
+    FOREIGN KEY (friendEmail) REFERENCES RegisteredUsers(email),
+		CHECK (userEmail <> friendEmail)
 );
