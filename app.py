@@ -111,10 +111,22 @@ def logout():
 	return render_template('hello.html', message='Logged out')
 
 @app.route('/friends', methods=['GET'])
+@flask_login.login_required
 def friends():
-	# cursor = conn.cursor()
-	# cursor.execute("SELECT friends")
-	return render_template('friends.html', supress = 'True')
+    if flask_login.current_user.id.is_authenticated():
+        flask.user = flask_login.current_user.get_id()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Friends WHERE userID = '{0}'".format(flask.user))
+    return render_template('friends.html', supress = 'True')
+
+@app.route('/addFriends', methods=['POST'])
+@flask_login.login_reqiured 
+def addingFriend(friendID):
+    try:
+        c = conn.cursor()
+        c.execute("SELECT firstName, lastName FROM RegisteredUsers WHERE userID = '{0}'".format(friendID))
+    except:
+        
 
 @login_manager.unauthorized_handler
 def unauthorized_handler():
@@ -182,7 +194,7 @@ def isEmailUnique(email):
 @flask_login.login_required
 def protected():
 	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile")
-
+    
 #begin photo uploading code
 # photos uploaded using base64 encoding so they can be directly embeded in HTML
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
@@ -206,12 +218,10 @@ def upload_file():
 		return render_template('upload.html')
 #end photo uploading code
 
-
 #default page
 @app.route("/", methods=['GET'])
 def hello():
 	return render_template('hello.html', message='Welecome to Photoshare')
-
 
 if __name__ == "__main__":
 	#this is invoked when in the shell  you run
