@@ -120,12 +120,13 @@ def friends():
     return render_template('friends.html', supress = 'True')
 
 @app.route('/addFriends', methods=['POST'])
-@flask_login.login_reqiured 
-def addingFriend(friendID):
-    try:
-        c = conn.cursor()
-        c.execute("SELECT firstName, lastName FROM RegisteredUsers WHERE userID = '{0}'".format(friendID))
-    except:
+@flask_login.login_required 
+
+# def addingFriend(friendID):
+#     try:
+#         c = conn.cursor()
+#         c.execute("SELECT firstName, lastName FROM RegisteredUsers WHERE userID = '{0}'".format(friendID))
+#     except:
         
 
 @login_manager.unauthorized_handler
@@ -172,7 +173,7 @@ def register_user():
 
 def getUsersPhotos(uid):    
 	cursor = conn.cursor()
-	cursor.execute("SELECT photoData, photoID, caption FROM Pictures WHERE userID = '{0}'".format(uid))
+	cursor.execute("SELECT photoData, photoID, caption FROM Photos WHERE userID = '{0}'".format(uid))
 	return cursor.fetchall() #NOTE return a list of tuples, [(photoData, pid, caption), ...]
 
 def getUserIdFromEmail(email):
@@ -205,14 +206,18 @@ def allowed_file(filename):
 @flask_login.login_required
 def upload_file():
 	if request.method == 'POST':
-		uid = getUserIdFromEmail(flask_login.current_user.id)
+		userID = getUserIdFromEmail(flask_login.current_user.id)
 		imgfile = request.files['photo']
 		caption = request.form.get('caption')
 		photo_data =imgfile.read()
+
+		c1 = conn.cursor()
+		c1.execute("SELECT COUNT(*) FROM Photos")
+		photoID = c1.fetchone()[0]
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Pictures (photoData, userID, caption) VALUES (%s, %s, %s )''', (photo_data, uid, caption))
+		cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData) VALUES (%s, %s, %s, %s )''', (photoID, userID, caption, photo_data))
 		conn.commit()
-		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(uid), base64=base64)
+		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID), base64=base64)
 	#The method is GET so we return a  HTML form to upload the a photo.
 	else:
 		return render_template('upload.html')

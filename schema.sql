@@ -30,9 +30,10 @@ CREATE TABLE UnregisteredUsers (
 
 CREATE TABLE Photos (
     photoID INTEGER NOT NULL,
+    userID INTEGER NOT NULL,
     caption CHAR(225),
     photoData longblob,
-    PRIMARY KEY (photoID)
+    FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID)
 );
 
 CREATE TABLE Tags (
