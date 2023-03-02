@@ -60,15 +60,13 @@ CREATE TABLE Albums (
 		CHECK (numOfLiked >= 0)
 );
 
+-- To get first and last name, use a select statement with registered user and friend id
 CREATE TABLE Friends (
 	userID INTEGER NOT NULL, 
     friendID INTEGER NOT NULL,
     firstName CHAR(25) NOT NULL,
     lastName CHAR(25) NOT NULL,
-  --   PRIMARY KEY (friendID),
 	FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID),
     FOREIGN KEY (friendID) REFERENCES RegisteredUsers(userID),
-    FOREIGN KEY (firstName) REFERENCES RegisteredUsers(firstName),
-    FOREIGN KEY (lastName) REFERENCES RegisteredUsers(lastName),
 		CHECK (userID <> friendID)
 );
