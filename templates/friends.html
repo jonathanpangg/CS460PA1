@@ -4,16 +4,18 @@
     <body>
         <div class="title">
             <h1>Friends List</h1>
+            <u1>
+                {% for i in data %}
+                <li> {{ i[0] }} </li> 
+                {% endfor %}
+            </u1>
         </div>
-            <h3>Your Friend's User ID</h3>
-            <form method="post" enctype="multipart/form-data" action="/upload">
+            <h3>Your Friend's Email</h3>
+            <form method="post" enctype="multipart/form-data" action="/friends">
                 <!-- <label for="userID">Friend ID:</label> -->
                 <!-- <input type="userID" name="Friend ID" required='true' /><br /> -->
                 <!-- <label for="caption">Please caption:</label> -->
-                <input type="text" name="caption" required='true' /><br />
-                <input type="submit" value="Add Friend" />
+                <input type="text" name="caption" required='true' method = 'post'/><br/>
+                <input type="submit" value="Add Friend">
             </form>
-            <ul>
-                <li><a href='/addFriend'>Add Friend</a> </li>
-            </ul>
     </body>

@@ -110,24 +110,23 @@ def logout():
 	flask_login.logout_user()
 	return render_template('loggedOut.html', message='Logged out')
 
-@app.route('/friends', methods=['GET'])
+@app.route('/friends', methods=['GET', 'POST'])
 @flask_login.login_required
 def friends():
-    if flask_login.current_user.id.is_authenticated():
-        flask.user = flask_login.current_user.get_id()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Friends WHERE userID = '{0}'".format(flask.user))
-    return render_template('friends.html', supress = 'True')
-
-@app.route('/addFriends', methods=['POST'])
-@flask_login.login_required 
-
-# def addingFriend(friendID):
-#     try:
-#         c = conn.cursor()
-#         c.execute("SELECT firstName, lastName FROM RegisteredUsers WHERE userID = '{0}'".format(friendID))
-#     except:
-        
+    flask.user = flask_login.current_user.get_id()
+    cursor = conn.cursor()
+    if request.method == 'GET':
+        try:
+            cursor.execute("SELECT friendEmail FROM Friends WHERE userEmail = '{0}'".format(flask.user))
+            return render_template('friends.html', data = cursor.fetchall())
+        except:
+            return render_template('friends.html', data = 'You have no friends :)')
+    # post request for adding friends
+    else:
+        friendID = request.form['caption']
+        cursor.execute("INSERT INTO Friends(userEmail, friendEmail) VALUES ('{0}', '{1}')".format(flask.user, friendID))
+        conn.commit()
+        return flask.redirect(flask.url_for('friends'), code = 303)
 
 @login_manager.unauthorized_handler
 def unauthorized_handler():
