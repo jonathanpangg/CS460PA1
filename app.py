@@ -110,15 +110,6 @@ def logout():
 	flask_login.logout_user()
 	return render_template('hello.html', message='Logged out')
 
-@app.route('/friends', methods=['GET'])
-@flask_login.login_required
-def friends():
-    if flask_login.current_user.id.is_authenticated():
-        flask.user = flask_login.current_user.get_id()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Friends WHERE userID = '{0}'".format(flask.user))
-    return render_template('friends.html', supress = 'True')
-
 @app.route('/friends', methods=['GET', 'POST'])
 @flask_login.login_required
 def friends():
