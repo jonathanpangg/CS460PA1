@@ -6,13 +6,12 @@
             <h1>These are your photos!</h1>
         </div>
         <ul>
+            
+            {% if photos %}
                 {% for photo in photos %}
                 <li>{{photo[2]}}<br>
                 <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></li>
-            {% endfor %}
-
-            </ul>
+                {% endfor %}
+            {% endif %}
+        </ul>
     </body>
-
-
-

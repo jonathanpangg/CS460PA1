@@ -83,7 +83,7 @@ def login():
 		return '''
 			   <form action='login' method='POST'>
 				<input type='text' name='email' id='email' placeholder='email'></input>
-				<input type='password' name='password' id='password' placeholder='password'></input>
+				<input type='userPassword' name='userPassword' id='userPassword' placeholder='password'></input>
 				<input type='submit' name='submit'></input>
 			   </form></br>
 		   <a href='/'>Home</a>
@@ -108,7 +108,7 @@ def login():
 @app.route('/logout')
 def logout():
 	flask_login.logout_user()
-	return render_template('hello.html', message='Logged out')
+	return render_template('loggedOut.html', message='Logged out')
 
 @app.route('/friends', methods=['GET', 'POST'])
 @flask_login.login_required
@@ -172,7 +172,7 @@ def register_user():
 
 def getUsersPhotos(uid):    
 	cursor = conn.cursor()
-	cursor.execute("SELECT photoData, photoID, caption FROM Pictures WHERE userID = '{0}'".format(uid))
+	cursor.execute("SELECT photoData, photoID, caption FROM Photos WHERE userID = '{0}'".format(uid))
 	return cursor.fetchall() #NOTE return a list of tuples, [(photoData, pid, caption), ...]
 
 def getUserIdFromEmail(email):
@@ -205,15 +205,19 @@ def allowed_file(filename):
 @flask_login.login_required
 def upload_file():
 	if request.method == 'POST':
-		uid = getUserIdFromEmail(flask_login.current_user.id)
+		userID = getUserIdFromEmail(flask_login.current_user.id)
 		imgfile = request.files['photo']
 		caption = request.form.get('caption')
 		photo_data =imgfile.read()
+
+		c1 = conn.cursor()
+		c1.execute("SELECT COUNT(*) FROM Photos")
+		photoID = c1.fetchone()[0]
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Pictures (photoData, userID, caption) VALUES (%s, %s, %s )''', (photo_data, uid, caption))
+		cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData) VALUES (%s, %s, %s, %s )''', (photoID, userID, caption, photo_data))
 		conn.commit()
-		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(uid), base64=base64)
-	#The method is GET so we return a  HTML form to upload the a photo.
+		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID), base64=base64)
+		#The method is GET so we return a  HTML form to upload the a photo.
 	else:
 		return render_template('upload.html')
 #end photo uploading code
@@ -221,7 +225,20 @@ def upload_file():
 #default page
 @app.route("/", methods=['GET'])
 def hello():
-	return render_template('hello.html', message='Welecome to Photoshare')
+	if User() is None:
+		return render_template('loggedOut.html', message='Welecome to Photoshare')
+	return render_template('.html', message='Welecome to Photoshare')
+
+@app.route("/photos")
+def photos():
+	if User() is None:
+		print("Need to show all photos")
+	userID = getUserIdFromEmail(flask_login.current_user.id)
+	return render_template('photos.html', photos = getUsersPhotos(userID), base64=base64)
+
+@app.route("/albums")
+def allAlbums():
+ 	return render_template('albums.html', messages = "These are all the public albums!")
 
 if __name__ == "__main__":
 	#this is invoked when in the shell  you run
