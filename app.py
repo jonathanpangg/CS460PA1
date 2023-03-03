@@ -7,7 +7,7 @@ import flask_login
 import os, base64
 
 mysql = MySQL()
-app = Flask(__name__)
+app = Flask(__name__, template_folder= 'templates')
 app.secret_key = 'super secret string'  # Change this!
 
 #These will need to be changed according to your creditionals
@@ -100,7 +100,6 @@ def login():
 			user.id = email
 			flask_login.login_user(user) #okay login in user
 			return flask.redirect(flask.url_for('protected')) #protected is a function defined in this file
-
 	#information did not match
 	return "<a href='/login'>Try again</a>\
 			</br><a href='/register'>or make an account</a>"
@@ -225,9 +224,9 @@ def upload_file():
 #default page
 @app.route("/", methods=['GET'])
 def hello():
-	if User() is None:
+	if User().is_authenticated == True:
 		return render_template('loggedOut.html', message='Welecome to Photoshare')
-	return render_template('.html', message='Welecome to Photoshare')
+	return render_template('hello.html', message='Welecome to Photoshare')
 
 @app.route("/photos")
 def photos():
