@@ -172,11 +172,16 @@ def register_user():
 def getUsersPhotos(uid, tag):    
 	cursor = conn.cursor()
 	if tag == None:
-		print("Here1")
 		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE userID = '{0}'".format(uid))
 	else:
-		print("Here2")
-		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE userID = '{0}' AND tagWord = '{1}'".format(uid, tag))
+		listOfTags = tag.split(', ')
+		selectStatement = "tagWord LIKE "
+		for i in range(0, len(listOfTags)):
+			if i + 1 == len(listOfTags):
+				selectStatement += '\'%' + listOfTags[i] + '%\''
+			else: 
+				selectStatement += '\'%' + listOfTags[i] + '%\' OR tagWord LIKE '
+		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE userID = '{0}' AND ({1})".format(uid, selectStatement))
 	return cursor.fetchall() #NOTE return a list of tuples, [(photoData, pid, caption), ...]
 
 def getUserIdFromEmail(email):

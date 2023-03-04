@@ -14,8 +14,11 @@
         <ul>
             {% if photos %}
                 {% for photo in photos %}
-                <li>{{photo[2]}}<br>
-                <h4>Tags: {{photo[3]}}</h4>
+                    <h2>{{photo[2]}}<h2>
+                    <h3>Tags: </h3>
+                    {% for i in photo[3].split(",") %}
+                        <ul> {{i}} </ul>
+                    {% endfor %}
                 <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></li>
                 {% endfor %}
             {% endif %}
