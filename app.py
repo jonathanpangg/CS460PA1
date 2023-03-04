@@ -169,9 +169,14 @@ def register_user():
 		flash("This email has already been used. Please login with that email or create a new account using a different email")
 		return flask.redirect(flask.url_for('register'))
 
-def getUsersPhotos(uid):    
+def getUsersPhotos(uid, tag):    
 	cursor = conn.cursor()
-	cursor.execute("SELECT photoData, photoID, caption FROM Photos WHERE userID = '{0}'".format(uid))
+	if tag == None:
+		print("Here1")
+		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE userID = '{0}'".format(uid))
+	else:
+		print("Here2")
+		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE userID = '{0}' AND tagWord = '{1}'".format(uid, tag))
 	return cursor.fetchall() #NOTE return a list of tuples, [(photoData, pid, caption), ...]
 
 def getUserIdFromEmail(email):
@@ -207,15 +212,17 @@ def upload_file():
 		userID = getUserIdFromEmail(flask_login.current_user.id)
 		imgfile = request.files['photo']
 		caption = request.form.get('caption')
+		tag = request.form.get('tag')
 		photo_data =imgfile.read()
 
 		c1 = conn.cursor()
 		c1.execute("SELECT COUNT(*) FROM Photos")
 		photoID = c1.fetchone()[0]
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData) VALUES (%s, %s, %s, %s )''', (photoID, userID, caption, photo_data))
+		cursor.execute("INSERT INTO Photos (photoID, userID, caption, photoData, tagWord) VALUES (%s, %s, %s, %s, %s)", (photoID, userID, caption, photo_data, tag))
+		cursor.execute("INSERT INTO Tags (tagWord, photoID) VALUES ('{0}', '{1}')".format(tag, photoID))
 		conn.commit()
-		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID), base64=base64)
+		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID, tag), base64=base64)
 		#The method is GET so we return a  HTML form to upload the a photo.
 	else:
 		return render_template('upload.html')
@@ -228,12 +235,19 @@ def hello():
 		return render_template('loggedOut.html', message='Welecome to Photoshare')
 	return render_template('hello.html', message='Welecome to Photoshare')
 
-@app.route("/photos")
+@app.route("/photos", methods = ['GET', 'POST'])
 def photos():
 	if User() is None:
 		print("Need to show all photos")
-	userID = getUserIdFromEmail(flask_login.current_user.id)
-	return render_template('photos.html', photos = getUsersPhotos(userID), base64=base64)
+	else :
+		userID = getUserIdFromEmail(flask_login.current_user.id)
+		if request.method == 'POST':
+			tag = request.form.get('tagWord')
+			photo = getUsersPhotos(userID, tag)
+			return render_template('photos.html', photos = photo, getTag = tag, base64=base64)
+		else:
+			photo = getUsersPhotos(userID, None)
+			return render_template('photos.html', photos = photo, getTag = None, base64=base64)
 
 @app.route("/albums")
 def allAlbums():

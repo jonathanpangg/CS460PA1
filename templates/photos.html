@@ -4,12 +4,18 @@
     <body>
         <div class="title">
             <h1>These are your photos!</h1>
+            <form method="post" enctype="multipart/form-data" action="/photos"> 
+                <label for="tag">Filter by tag:</label>
+                <input type="text" name="tagWord" required='true' method = 'post' /><br />
+                <input type="submit" value = "Submit" method = 'post'">
+            </form>
+            
         </div>
         <ul>
-            
             {% if photos %}
                 {% for photo in photos %}
                 <li>{{photo[2]}}<br>
+                <h4>Tags: {{photo[3]}}</h4>
                 <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></li>
                 {% endfor %}
             {% endif %}
