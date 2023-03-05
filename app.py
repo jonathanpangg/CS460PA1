@@ -225,6 +225,28 @@ def isEmailUnique(email):
 		return True
 #end login code
 
+def getMostPopularTags():
+    dict = {}
+    cursor = conn.cursor()
+    cursor.execute("SELECT tagWord From Tags")
+    
+    for i in cursor.fetchall():
+        list = i[0].split(", ")
+        for j in list: 
+            if j in dict:
+                dict[j] += 1
+            else:
+                dict[j] = 1
+    
+    sortedDict = sorted(dict.items(), key=lambda x:x[1], reverse = True)
+    res = []
+    if len(sortedDict) < 3:
+        for i in range(0, len(sortedDict)):
+            res.append(sortedDict[i][0])
+    else:
+        res = [sortedDict[0][0], sortedDict[1][0], sortedDict[2][0]]
+    return res
+    
 @app.route('/profile')
 @flask_login.login_required
 def protected():
@@ -301,7 +323,7 @@ def photos():
 
 @app.route("/allPhotos")
 def allPhotos():
-	return render_template('allPhotos.html', allPhotos = getAllPhotos(None), base64=base64)
+	return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), base64=base64)
 
 @app.route('/albums')
 def albums():

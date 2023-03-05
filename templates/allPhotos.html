@@ -8,6 +8,13 @@
 
         <li><a href='/upload'>Upload a photo</a> </li>
         <li><a href='/'>Home</a></li>
+        <div> 
+            <h1> Top 3 Tags</h1>
+            {% for tag in popularTags %}
+                <ul> {{tag}} </ul>
+            {% endfor %}
+        </div>
+
         <div>
             <form method="post" enctype="multipart/form-data" action="/photos"> 
                 <label for="tag">Filter by tag:</label>
