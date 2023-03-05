@@ -3,8 +3,8 @@ USE photoshare;
 
 DROP TABLE IF EXISTS Friends CASCADE;
 DROP TABLE IF EXISTS Comments CASCADE;
-DROP TABLE IF EXISTS Photos CASCADE;
 DROP TABLE IF EXISTS Tags CASCADE;
+DROP TABLE IF EXISTS Photos CASCADE;
 DROP TABLE IF EXISTS RegisteredUsers CASCADE;
 DROP TABLE IF EXISTS UnregisteredUsers CASCADE;
 DROP TABLE IF EXISTS Albums CASCADE;
@@ -46,13 +46,16 @@ CREATE TABLE Photos (
     caption CHAR(225),
     photoData longblob,
     albumID INTEGER NOT NULL,
+    tagWord CHAR(25),
     FOREIGN KEY (albumID) REFERENCES Albums(albumID),
+    PRIMARY KEY (photoID),
     FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID)
 );
 
 CREATE TABLE Tags (
-    tagWord CHAR(25) NOT NULL,
-    PRIMARY KEY (tagWord)
+    tagWord CHAR(25),
+    photoID INTEGER NOT NULL,
+    FOREIGN KEY (photoID) REFERENCES Photos(photoID)
 );
 
 CREATE TABLE Comments (

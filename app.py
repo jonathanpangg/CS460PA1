@@ -170,9 +170,19 @@ def register_user():
 		flash("This email has already been used. Please login with that email or create a new account using a different email")
 		return flask.redirect(flask.url_for('register'))
 
-def getUsersPhotos(uid):    
+def getUsersPhotos(uid, tag):    
 	cursor = conn.cursor()
-	cursor.execute("SELECT photoData, photoID, caption FROM Photos WHERE userID = '{0}'".format(uid))
+	if tag == None:
+		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE userID = '{0}'".format(uid))
+	else:
+		listOfTags = tag.split(', ')
+		selectStatement = "tagWord LIKE "
+		for i in range(0, len(listOfTags)):
+			if i + 1 == len(listOfTags):
+				selectStatement += '\'%' + listOfTags[i] + '%\''
+			else: 
+				selectStatement += '\'%' + listOfTags[i] + '%\' OR tagWord LIKE '
+		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE userID = '{0}' AND ({1})".format(uid, selectStatement))
 	return cursor.fetchall() #NOTE return a list of tuples, [(photoData, pid, caption), ...]
 
 def getAllPhotos():
@@ -223,15 +233,16 @@ def upload_file():
 		userID = getUserIdFromEmail(flask_login.current_user.id)
 		imgfile = request.files['photo']
 		caption = request.form.get('caption')
+		tag = request.form.get('tag')
 		photo_data =imgfile.read()
 
 		c1 = conn.cursor()
-		c1.execute("SELECT COUNT(*) FROM Photos")
-		photoID = c1.fetchone()[0]
+		photoID = uuid.uuid4().int & (1<<16)-1
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData) VALUES (%s, %s, %s, %s )''', (photoID, userID, caption, photo_data))
+		cursor.execute("INSERT INTO Photos (photoID, userID, caption, photoData, tagWord) VALUES (%s, %s, %s, %s, %s)", (photoID, userID, caption, photo_data, tag))
+		cursor.execute("INSERT INTO Tags (tagWord, photoID) VALUES ('{0}', '{1}')".format(tag, photoID))
 		conn.commit()
-		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID), base64=base64)
+		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID, None), base64=base64)
 		#The method is GET so we return a  HTML form to upload the a photo.
 	else:
 		return render_template('upload.html')
@@ -244,14 +255,38 @@ def hello():
 		return render_template('loggedOut.html', message='Welecome to Photoshare')
 	return render_template('hello.html', message='Welecome to Photoshare')
 
-@app.route("/photos")
+@app.route("/photos", methods = ['GET', 'POST'])
 def photos():
 	if flask_login.current_user.is_authenticated == False:
-		print("Need to show all photos")
 		return render_template('allPhotos.html', allPhotos = getAllPhotos(), base64=base64)
 	else:
 		userID = getUserIdFromEmail(flask_login.current_user.id)
-	return render_template('photos.html', photos = getUsersPhotos(userID), base64=base64)
+
+		if request.method == 'POST':
+			photoID = request.form
+			res = ""
+			val = ""
+			for key in photoID.keys():
+				for value in photoID.getlist(key):
+					res = key
+					val = value
+			# delete request
+			if val == "Delete":
+				cursor = conn.cursor()
+				cursor.execute("DELETE FROM Tags WHERE photoID = '{0}'".format(res))
+				cursor.execute("DELETE FROM Photos WHERE photoID = '{0}'".format(res))
+				conn.commit()
+				photo = getUsersPhotos(userID, None)
+				return render_template('photos.html', photos = photo, getTag = None, base64=base64)
+			# post request for filter by tags
+			else: 
+				tag = request.form.get('tagWord')
+				photo = getUsersPhotos(userID, tag)
+				return render_template('photos.html', photos = photo, getTag = tag, base64=base64)
+		# get request for all user photos
+		else:
+			photo = getUsersPhotos(userID, None)
+			return render_template('photos.html', photos = photo, getTag = None, base64=base64)
 
 @app.route("/allPhotos")
 def allPhotos():
@@ -293,7 +328,7 @@ def newAlbum():
 		cursor = conn.cursor()
 		cursor.execute('''INSERT INTO Albums (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked ) VALUES (%s, %s, %s, %s, %s, %s )''', (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked))
 		conn.commit()
-		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID), base64=base64)
+		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(ownerID), base64=base64)
 		#The method is GET so we return a  HTML form to upload the a photo.
 	else:
 		return render_template('albums.html')
