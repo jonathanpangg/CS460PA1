@@ -239,7 +239,7 @@ def upload_file():
 		c1 = conn.cursor()
 		photoID = uuid.uuid4().int & (1<<16)-1
 		cursor = conn.cursor()
-		cursor.execute("INSERT INTO Photos (photoID, userID, caption, photoData, tagWord) VALUES (%s, %s, %s, %s, %s)", (photoID, userID, caption, photo_data, tag))
+		cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData, albumID, tagWord) VALUES (%s, %s, %s, %s, %s, %s)''', (photoID, userID, caption, photo_data, None, tag))
 		cursor.execute("INSERT INTO Tags (tagWord, photoID) VALUES ('{0}', '{1}')".format(tag, photoID))
 		conn.commit()
 		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID, None), base64=base64)
