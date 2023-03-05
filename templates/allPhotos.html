@@ -8,12 +8,23 @@
 
         <li><a href='/upload'>Upload a photo</a> </li>
         <li><a href='/'>Home</a></li>
-        <ul>
+        <div>
+            <form method="post" enctype="multipart/form-data" action="/photos"> 
+                <label for="tag">Filter by tag:</label>
+                <input type="text" name="tagWord" required='true' method = 'post' /><br />
+                <input type="submit" value = "Submit" method = 'post'>
+            </form>
             
+        </div>
+        <ul>
             {% if allPhotos %}
                 {% for photo in allPhotos %}
-                <li>{{photo[2]}}<br>
-                <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></li>
+                    <h2>{{photo[2]}}<h2>
+                    <h3>Tags: </h3>
+                    {% for i in photo[3].split(",") %}
+                        <ul> {{i}} </ul>
+                    {% endfor %}
+                    <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></br> 
                 {% endfor %}
             {% endif %}
         </ul>

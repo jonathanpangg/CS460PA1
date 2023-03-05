@@ -185,9 +185,19 @@ def getUsersPhotos(uid, tag):
 		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE userID = '{0}' AND ({1})".format(uid, selectStatement))
 	return cursor.fetchall() #NOTE return a list of tuples, [(photoData, pid, caption), ...]
 
-def getAllPhotos():
+def getAllPhotos(tags):
 	cursor = conn.cursor()
-	cursor.execute("SELECT photoData, photoID, caption FROM Photos")
+	if tags == None:
+		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos")
+	else: 
+		listOfTags = tags.split(', ')
+		selectStatement = "tagWord LIKE "
+		for i in range(0, len(listOfTags)):
+			if i + 1 == len(listOfTags):
+				selectStatement += '\'%' + listOfTags[i] + '%\''
+			else: 
+				selectStatement += '\'%' + listOfTags[i] + '%\' OR tagWord LIKE '
+		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE userID = ({0})".format(selectStatement))
 	return cursor.fetchall()
 
 def getUserIdFromEmail(email):
@@ -236,7 +246,6 @@ def upload_file():
 		tag = request.form.get('tag')
 		photo_data =imgfile.read()
 
-		c1 = conn.cursor()
 		photoID = uuid.uuid4().int & (1<<16)-1
 		cursor = conn.cursor()
 		cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData, albumID, tagWord) VALUES (%s, %s, %s, %s, %s, %s)''', (photoID, userID, caption, photo_data, None, tag))
@@ -258,7 +267,9 @@ def hello():
 @app.route("/photos", methods = ['GET', 'POST'])
 def photos():
 	if flask_login.current_user.is_authenticated == False:
-		return render_template('allPhotos.html', allPhotos = getAllPhotos(), base64=base64)
+		tag = request.form.get('tagWord')
+		photo = getAllPhotos(tag)
+		return render_template('allPhotos.html', allPhotos = photo, getTag = tag, base64=base64)
 	else:
 		userID = getUserIdFromEmail(flask_login.current_user.id)
 
@@ -290,7 +301,7 @@ def photos():
 
 @app.route("/allPhotos")
 def allPhotos():
-	return render_template('allPhotos.html', allPhotos = getAllPhotos(), base64=base64)
+	return render_template('allPhotos.html', allPhotos = getAllPhotos(None), base64=base64)
 
 @app.route('/albums')
 def albums():
