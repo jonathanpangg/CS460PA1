@@ -1,4 +1,4 @@
-import flask
+import flask, uuid
 from flask import Flask, flash, Response, request, render_template, redirect, url_for
 from flaskext.mysql import MySQL
 import flask_login
@@ -221,13 +221,12 @@ def upload_file():
 		photo_data =imgfile.read()
 
 		c1 = conn.cursor()
-		c1.execute("SELECT COUNT(*) FROM Photos")
-		photoID = c1.fetchone()[0]
+		photoID = uuid.uuid4().int & (1<<16)-1
 		cursor = conn.cursor()
 		cursor.execute("INSERT INTO Photos (photoID, userID, caption, photoData, tagWord) VALUES (%s, %s, %s, %s, %s)", (photoID, userID, caption, photo_data, tag))
 		cursor.execute("INSERT INTO Tags (tagWord, photoID) VALUES ('{0}', '{1}')".format(tag, photoID))
 		conn.commit()
-		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID, tag), base64=base64)
+		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID, None), base64=base64)
 		#The method is GET so we return a  HTML form to upload the a photo.
 	else:
 		return render_template('upload.html')
@@ -247,9 +246,24 @@ def photos():
 	else :
 		userID = getUserIdFromEmail(flask_login.current_user.id)
 		if request.method == 'POST':
-			tag = request.form.get('tagWord')
-			photo = getUsersPhotos(userID, tag)
-			return render_template('photos.html', photos = photo, getTag = tag, base64=base64)
+			photoID = request.form
+			res = ""
+			val = ""
+			for key in photoID.keys():
+				for value in photoID.getlist(key):
+					res = key
+					val = value
+			if val == "Delete":
+				cursor = conn.cursor()
+				cursor.execute("DELETE FROM Tags WHERE photoID = '{0}'".format(res))
+				cursor.execute("DELETE FROM Photos WHERE photoID = '{0}'".format(res))
+				conn.commit()
+				photo = getUsersPhotos(userID, None)
+				return render_template('photos.html', photos = photo, getTag = None, base64=base64)
+			else: 
+				tag = request.form.get('tagWord')
+				photo = getUsersPhotos(userID, tag)
+				return render_template('photos.html', photos = photo, getTag = tag, base64=base64)
 		else:
 			photo = getUsersPhotos(userID, None)
 			return render_template('photos.html', photos = photo, getTag = None, base64=base64)
@@ -259,6 +273,6 @@ def allAlbums():
  	return render_template('albums.html', messages = "These are all the public albums!")
 
 if __name__ == "__main__":
-	#this is invoked when in the shell  you run
+	#this is invoked when in the shell you run
 	#$ python app.py
 	app.run(port=5000, debug=True)

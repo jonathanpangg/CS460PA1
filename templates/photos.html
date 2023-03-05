@@ -7,20 +7,23 @@
             <form method="post" enctype="multipart/form-data" action="/photos"> 
                 <label for="tag">Filter by tag:</label>
                 <input type="text" name="tagWord" required='true' method = 'post' /><br />
-                <input type="submit" value = "Submit" method = 'post'">
+                <input type="submit" value = "Submit" method = 'post'>
             </form>
             
         </div>
-        <ul>
-            {% if photos %}
-                {% for photo in photos %}
-                    <h2>{{photo[2]}}<h2>
-                    <h3>Tags: </h3>
-                    {% for i in photo[3].split(",") %}
-                        <ul> {{i}} </ul>
+        <form method="POST" enctype="multipart/form-data" action="/photos"> 
+            <ul>
+                {% if photos %}
+                    {% for photo in photos %}
+                        <h2>{{photo[2]}}<h2>
+                        <h3>Tags: </h3>
+                        {% for i in photo[3].split(",") %}
+                            <ul> {{i}} </ul>
+                        {% endfor %}
+                        <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></br>
+                        <input type="submit" name = "{{photo[1]}}" value = "Delete" method = 'POST'> 
                     {% endfor %}
-                <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></li>
-                {% endfor %}
-            {% endif %}
-        </ul>
+                {% endif %}
+            </ul>
+        </form>
     </body>
