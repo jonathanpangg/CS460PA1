@@ -1,6 +1,7 @@
-import flask
+import flask, uuid
 from flask import Flask, flash, Response, request, render_template, redirect, url_for
 from flaskext.mysql import MySQL
+from datetime import date
 import flask_login
 
 #for image uploading 
@@ -174,10 +175,25 @@ def getUsersPhotos(uid):
 	cursor.execute("SELECT photoData, photoID, caption FROM Photos WHERE userID = '{0}'".format(uid))
 	return cursor.fetchall() #NOTE return a list of tuples, [(photoData, pid, caption), ...]
 
+def getAllPhotos():
+	cursor = conn.cursor()
+	cursor.execute("SELECT photoData, photoID, caption FROM Photos")
+	return cursor.fetchall()
+
 def getUserIdFromEmail(email):
 	cursor = conn.cursor()
 	cursor.execute("SELECT userID FROM RegisteredUsers WHERE email = '{0}'".format(email))
 	return cursor.fetchone()[0]
+
+def getUsersAlbums(uid):
+	cursor = conn.cursor()
+	cursor.execute("SELECT * FROM Albums WHERE ownerID = '{0}'".format(uid))
+	return cursor.fetchall()
+
+def getAllAlbums():
+	cursor = conn.cursor()
+	cursor.execute("SELECT * FROM Albums")
+	return cursor.fetchall()
 
 def isEmailUnique(email):
 	#use this to check if a email has already been registered
@@ -224,20 +240,64 @@ def upload_file():
 #default page
 @app.route("/", methods=['GET'])
 def hello():
-	if User().is_authenticated == True:
+	if flask_login.current_user.is_authenticated == False:
 		return render_template('loggedOut.html', message='Welecome to Photoshare')
 	return render_template('hello.html', message='Welecome to Photoshare')
 
 @app.route("/photos")
 def photos():
-	if User() is None:
+	if flask_login.current_user.is_authenticated == False:
 		print("Need to show all photos")
-	userID = getUserIdFromEmail(flask_login.current_user.id)
+		return render_template('allPhotos.html', allPhotos = getAllPhotos(), base64=base64)
+	else:
+		userID = getUserIdFromEmail(flask_login.current_user.id)
 	return render_template('photos.html', photos = getUsersPhotos(userID), base64=base64)
 
-@app.route("/albums")
+@app.route("/allPhotos")
+def allPhotos():
+	return render_template('allPhotos.html', allPhotos = getAllPhotos(), base64=base64)
+
+@app.route('/albums')
+def albums():
+	if flask_login.current_user.is_authenticated == False:
+		print("We show all albums")
+		return render_template('albums.html', allAlbums = getAllAlbums())
+	else:
+		userID = getUserIdFromEmail(flask_login.current_user.id)
+	return render_template('albums.html', myalbums = getUsersAlbums(userID))
+
+
+@app.route('/albums/<albumID>')
+def alltheAlbums(albumID):
+	return render_template('albums.html', messages = "These are all the public albums!")
+
+@app.route("/allAlbums")
 def allAlbums():
- 	return render_template('albums.html', messages = "These are all the public albums!")
+	return render_template('albums.html', allAlbums = getAllAlbums())
+
+@app.route("/newAlbum")
+@flask_login.login_required
+def newAlbum():
+	if request.method == 'POST':
+		ownerID = getUserIdFromEmail(flask_login.current_user.id)
+		albumName = request.form.get['albumName']
+		dateOfCreation = date.today()
+		numPhotos = 0
+		numOfLiked = 0
+		imgfile = request.files['photo']
+		# caption = request.form.get('caption')
+		# photo_data =imgfile.read()
+
+		c1 = conn.cursor()
+		albumID = uuid.uuid4().int & (1<<16)-1
+		cursor = conn.cursor()
+		cursor.execute('''INSERT INTO Albums (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked ) VALUES (%s, %s, %s, %s, %s, %s )''', (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked))
+		conn.commit()
+		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID), base64=base64)
+		#The method is GET so we return a  HTML form to upload the a photo.
+	else:
+		return render_template('albums.html')
+	return render_template('newAlbum.html', messages = "These are all the public albums!")
 
 if __name__ == "__main__":
 	#this is invoked when in the shell  you run

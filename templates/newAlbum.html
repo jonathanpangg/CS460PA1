@@ -1,0 +1,24 @@
+<head>
+    <title>My Albums</title>
+</head>
+    <body>
+        <div class="title">
+            <h1>Create a New Photo Album!</h1>
+        </div>
+
+        <li><a href='/albums'>View Your Albums</a> </li>
+        <li><a href='/allAlbums'>View All Albums</a> </li>
+        <li><a href='/'>Home</a></li>
+
+        <form method="post" enctype="multipart/form-data" action="/newAlbum">
+
+            <label for="albumName">Album Name:</label>
+            <input type="text" name="albumName" required='true' /><br />
+
+            <!-- <label for="photo">Select photo:</label>
+            <input type="file" name="photo" required='true' /><br />
+            <label for="caption">Please caption:</label>
+            <input type="text" name="caption" required='true' /><br /> -->
+            <input type="submit" value="Create" />
+        </form>
+    </body>

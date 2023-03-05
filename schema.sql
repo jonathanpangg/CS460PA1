@@ -28,11 +28,25 @@ CREATE TABLE UnregisteredUsers (
     PRIMARY KEY (newUserID)
 );
 
+CREATE TABLE Albums (
+    albumID INTEGER NOT NULL,
+    albumName CHAR(25),
+    ownerID INTEGER NOT NULL,
+    dateOfCreation Date,
+    numPhotos INTEGER,
+    numOfLiked INTEGER,
+    FOREIGN KEY (ownerID) REFERENCES RegisteredUsers(userID),
+    PRIMARY KEY (albumID),
+		CHECK (numOfLiked >= 0)
+);
+
 CREATE TABLE Photos (
     photoID INTEGER NOT NULL,
     userID INTEGER NOT NULL,
     caption CHAR(225),
     photoData longblob,
+    albumID INTEGER NOT NULL,
+    FOREIGN KEY (albumID) REFERENCES Albums(albumID),
     FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID)
 );
 
@@ -48,17 +62,6 @@ CREATE TABLE Comments (
     commentDate Date,
     PRIMARY KEY (commentID),
     FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID)
-);
-
-CREATE TABLE Albums (
-    albumID INTEGER NOT NULL,
-    albumName CHAR(25),
-    ownerID CHAR(25),
-    dateOfCreation Date,
-    numPhotos INTEGER,
-    numOfLiked INTEGER,
-    PRIMARY KEY (albumID),
-		CHECK (numOfLiked >= 0)
 );
 
 -- To get first and last name, use a select statement with registered user and friend id
