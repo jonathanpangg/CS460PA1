@@ -4,6 +4,7 @@ USE photoshare;
 DROP TABLE IF EXISTS Friends CASCADE;
 DROP TABLE IF EXISTS Comments CASCADE;
 DROP TABLE IF EXISTS Tags CASCADE;
+DROP TABLE IF EXISTS LikedPhotos CASCADE;
 DROP TABLE IF EXISTS Photos CASCADE;
 DROP TABLE IF EXISTS UnregisteredUsers CASCADE;
 DROP TABLE IF EXISTS Albums CASCADE;
@@ -33,8 +34,9 @@ CREATE TABLE Albums (
     albumName CHAR(25),
     ownerID INTEGER NOT NULL,
     dateOfCreation Date,
-    FOREIGN KEY (ownerID) REFERENCES RegisteredUsers(userID),
-    PRIMARY KEY (albumID)
+    numPhotos INTEGER,
+    PRIMARY KEY (albumID),
+    FOREIGN KEY (ownerID) REFERENCES RegisteredUsers(userID)
 );
 
 CREATE TABLE Photos (
@@ -44,18 +46,29 @@ CREATE TABLE Photos (
     photoData longblob,
     albumID INTEGER,
     tagWord CHAR(25),
-    FOREIGN KEY (albumID) REFERENCES Albums(albumID),
+    numOfLiked INTEGER,
+    comments VARCHAR(500),
     PRIMARY KEY (photoID),
-    FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID)
+    FOREIGN KEY (albumID) REFERENCES Albums(albumID),
+    FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID),
+		CHECK (numOfLiked >= 0)
+);
+
+CREATE TABLE LikedPhotos (
+	photoID INTEGER NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    FOREIGN KEY (photoID) REFERENCES Photos(photoID),
+    FOREIGN KEY (email) REFERENCES RegisteredUsers(email)
 );
 
 CREATE TABLE Comments (
     commentID INTEGER NOT NULL,
-    textData TEXT(65535),
-    userID INTEGER NOT NULL,
+    textData VARCHAR(500),
+    photoID INTEGER NOT NULL,
+    email VARCHAR(255),
     commentDate Date,
     PRIMARY KEY (commentID),
-    FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID)
+    FOREIGN KEY (photoID) REFERENCES Photos(photoID)
 );
 
 -- To get first and last name, use a select statement with registered user and friend id
