@@ -1,5 +1,8 @@
 <head>
     <title>AllPhotos</title>
+    <style> 
+        textarea {width = 500}
+    </style>
 </head>
     <body>
         <div class="title">
@@ -9,11 +12,11 @@
         <li><a href='/upload'>Upload a photo</a> </li>
         <li><a href='/'>Home</a></li>
         <div> 
-            <h1> Top 3 Tags</h1>
+            <h3> Top 3 Tags</h3>
             {% for tag in popularTags %}
-                <ul> {{tag}} </ul>
+                <div> {{tag}} </div>
             {% endfor %}
-        </div>
+        </br>
 
         <div>
             <form method="post" enctype="multipart/form-data" action="/photos"> 
@@ -21,24 +24,36 @@
                 <input type="text" name="tagWord" required='true' method = 'post' /><br />
                 <input type="submit" value = "Submit" method = 'post'>
             </form>
-            
         </div>
         <form method="post" enctype="multipart/form-data" action="/allPhotos"> 
-            <ul>
-                {% if allPhotos %}
-                    {% for photo in allPhotos %}
-                        <h2>{{photo[2]}}<h2>
-                        <h3>Tags: </h3>
-                        {% for i in photo[3].split(",") %}
-                            <ul> {{i}} </ul>
-                        {% endfor %}
-                        <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></br> 
-                        {% if auth %}
-                            <input type="submit" name = "{{photo[1]}}" value = "Like" method = 'POST'>  </br>
-                        {% endif %}
-                        <text> Likes: {{photo[4]}}</text>
+            {% if allPhotos %}
+                {% for photo in allPhotos %}
+                    <h3>{{photo[2]}}</h3>
+                    <div>Tags: </div>
+                    {% for i in photo[3].split(",") %}
+                        <div> {{i}} </div>
                     {% endfor %}
-                {% endif %}
-            </ul>
+                    <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></br> 
+                    <text> Likes: {{photo[4]}}</br>
+                    {% if auth %}
+                        <input type="submit" name = "{{photo[1]}}" value = "Like" method = 'POST'> </br>
+                    {% endif %}
+                    <div>Comments: </div>
+                    {% if photo[5] != None %}
+                        {% for i in commentsInfo %}
+                            {% if i[0] == photo[1] %}
+                                <div> {{i[2]}}: {{i[1]}} - {{i[3]}}</div>
+                            {% endif %}
+                        {% endfor %}
+
+                    {% endif %}
+                    {% if photo[5] == None %}
+                        <div> None </div>
+                    {% endif %}
+                    <label for="comment">Add comment: </label>
+                    <input type="text" name="{{photo[1]}}" method = 'post' /><br />
+                    <input type="submit" name = "Com{{photo[1]}}" value = "Add" method = 'post'> 
+                {% endfor %}
+            {% endif %}
         </form>
     </body>

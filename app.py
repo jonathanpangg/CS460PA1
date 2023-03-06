@@ -188,7 +188,7 @@ def getUsersPhotos(uid, tag):
 def getAllPhotos(tags):
 	cursor = conn.cursor()
 	if tags == None:
-		cursor.execute("SELECT photoData, photoID, caption, tagWord, numOfLiked FROM Photos")
+		cursor.execute("SELECT photoData, photoID, caption, tagWord, numOfLiked, comments FROM Photos")
 	else: 
 		listOfTags = tags.split(', ')
 		selectStatement = "tagWord LIKE "
@@ -197,7 +197,7 @@ def getAllPhotos(tags):
 				selectStatement += '\'%' + listOfTags[i] + '%\''
 			else: 
 				selectStatement += '\'%' + listOfTags[i] + '%\' OR tagWord LIKE '
-		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE userID = ({0})".format(selectStatement))
+		cursor.execute("SELECT photoData, photoID, caption, tagWord, numOfLiked, comments FROM Photos WHERE userID = ({0})".format(selectStatement))
 	return cursor.fetchall()
 
 def getUserIdFromEmail(email):
@@ -228,7 +228,7 @@ def isEmailUnique(email):
 def getMostPopularTags():
     dict = {}
     cursor = conn.cursor()
-    cursor.execute("SELECT tagWord From Tags")
+    cursor.execute("SELECT tagWord From Photos")
     
     for i in cursor.fetchall():
         list = i[0].split(", ")
@@ -270,11 +270,13 @@ def upload_file():
 
 		photoID = uuid.uuid4().int & (1<<16)-1
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData, albumID, tagWord) VALUES (%s, %s, %s, %s, %s, %s)''', (photoID, userID, caption, photo_data, None, tag))
-		cursor.execute("INSERT INTO Tags (tagWord, photoID) VALUES ('{0}', '{1}')".format(tag, photoID))
+		if tag != None:
+			cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData, albumID, tagWord, comments) VALUES (%s, %s, %s, %s, %s, %s, %s)''', (photoID, userID, caption, photo_data, None, tag, None))
+		else:
+			cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData, albumID, tagWord, comments) VALUES (%s, %s, %s, %s, %s, %s, %s)''', (photoID, userID, caption, photo_data, None, None, None))
 		conn.commit()
 		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID, None), base64=base64)
-		#The method is GET so we return a  HTML form to upload the a photo.
+		#The method is GET so we return a HTML form to upload the a photo.
 	else:
 		return render_template('upload.html')
 #end photo uploading code
@@ -306,7 +308,6 @@ def photos():
 			# delete request
 			if val == "Delete":
 				cursor = conn.cursor()
-				cursor.execute("DELETE FROM Tags WHERE photoID = '{0}'".format(res))
 				cursor.execute("DELETE FROM Photos WHERE photoID = '{0}'".format(res))
 				conn.commit()
 				photo = getUsersPhotos(userID, None)
@@ -330,34 +331,63 @@ def allPhotos():
     else:
         if User() == None or flask_login.current_user.is_authenticated == False:
             return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), auth = False, base64=base64)
+	    
+        
         photoID = request.form
         res = ""
         for key in photoID.keys():
             for value in photoID.getlist(key):
                 res = key
+                if value == 'Add':
+                    break 
+            else:
+                continue
+            break
         
+        print(photoID)
         cursor = conn.cursor()
-        cursor.execute("SELECT numOfLiked FROM Photos WHERE photoID = '{0}'".format(res))
-        likes = cursor.fetchall()[0][0]
+        print(res[3:])
         
-        cursor.execute("SELECT email FROM LikedPhotos WHERE photoID = '{0}'".format(res))
-        users = cursor.fetchall()
-        print(users)
-        for i in users:
-            if i[0] == flask_login.current_user.id:
-                return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), auth = True, base64=base64)
-        
-        
-        if likes == None:
-            likes = 1
+        if res[0:3] == 'Com':
+            comment = request.form.get(res[3:])
+            if comment != None:
+                cursor.execute("SELECT comments FROM Photos WHERE photoID = '{0}'".format(res[3:]))
+                oldComment = cursor.fetchall()
+                newComment = ""
+                for i in oldComment:
+                    if i[0] == None:
+                        newComment =  "" + "*" + comment
+                    else:
+                        newComment =  "{0}".format(i[0]) + "*" + comment
+                print(newComment)
+                commentID = uuid.uuid4().int & (1<<16)-1
+                cursor.execute("UPDATE Photos SET comments = '{0}' WHERE photoID = '{1}'".format(newComment, res[3:])) 
+                
+                if flask_login.current_user.is_authenticated == False:
+                    cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4})".format(commentID, comment, res[3:], -1, date.today()))
+                else:
+                    cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}')".format(commentID, comment, res[3:], flask_login.current_user.id, date.today()))
+                conn.commit()
         else:
-            likes += 1
-    	
-        cursor.execute("UPDATE Photos SET numOfLiked = '{0}' WHERE photoID = '{1}'".format(likes, res))
-        cursor.execute("INSERT INTO LikedPhotos (photoID, email) VALUES ('{0}', '{1}')".format(res, flask_login.current_user.id))
-        conn.commit()
-        
-        return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), auth = True, base64=base64)
+            cursor.execute("SELECT numOfLiked FROM Photos WHERE photoID = '{0}'".format(res))
+            likes = cursor.fetchall()[0][0]
+            cursor.execute("SELECT email FROM LikedPhotos WHERE photoID = '{0}'".format(res))
+            users = cursor.fetchall()
+            
+            for i in users:
+                if i[0] == flask_login.current_user.id:
+                    return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), auth = True, base64=base64)
+            if likes == None:
+                likes = 1
+            else:
+                likes += 1
+                
+            cursor.execute("UPDATE Photos SET numOfLiked = '{0}' WHERE photoID = '{1}'".format(likes, res))
+            cursor.execute("INSERT INTO LikedPhotos (photoID, email) VALUES ('{0}', '{1}')".format(res, flask_login.current_user.id))
+            conn.commit()
+        cursor.execute("SELECT photoID, textData, email, commentDate FROM Comments")
+        info = cursor.fetchall()
+        return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = info, auth = True, base64=base64)
 
 @app.route('/albums')
 def albums():
