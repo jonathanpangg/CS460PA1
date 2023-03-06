@@ -205,6 +205,11 @@ def getAllAlbums():
 	cursor.execute("SELECT * FROM Albums")
 	return cursor.fetchall()
 
+def getUserPhotosinAlbum(albumID):
+	cursor = conn.cursor()
+	cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE albumID = '{0}'".format(albumID))
+	return cursor.fetchall()
+
 def isEmailUnique(email):
 	#use this to check if a email has already been registered
 	cursor = conn.cursor()
@@ -263,7 +268,7 @@ def photos():
 		userID = getUserIdFromEmail(flask_login.current_user.id)
 
 		if request.method == 'POST':
-			photoID = request.form
+			photoID = request.form # [photoID, 'Delete']
 			res = ""
 			val = ""
 			for key in photoID.keys():
@@ -292,47 +297,78 @@ def photos():
 def allPhotos():
 	return render_template('allPhotos.html', allPhotos = getAllPhotos(), base64=base64)
 
-@app.route('/albums')
+@app.route('/albums', methods = ['GET', 'POST'])
 def albums():
 	if flask_login.current_user.is_authenticated == False:
 		print("We show all albums")
 		return render_template('albums.html', allAlbums = getAllAlbums())
 	else:
 		userID = getUserIdFromEmail(flask_login.current_user.id)
-	return render_template('albums.html', myalbums = getUsersAlbums(userID))
-
+		if request.method == 'POST':
+			data = request.form
+			res = ""
+			val = ""
+			print(data)
+			for key in data.keys():
+				for value in data.getlist(key):
+					res = key
+					val = value
+			if val == "Delete This Album":
+				cursor = conn.cursor()
+				cursor.execute("SELECT photoID FROM Photos WHERE albumID = '{0}'".format(res))
+				photoIDs = cursor.fetchall()
+				print(photoIDs)
+				print(photoIDs[0])
+				for x in photoIDs:
+					cursor.execute("DELETE FROM Tags WHERE photoID = '{0}'".format(x[0]))
+					cursor.execute("DELETE FROM Photos WHERE albumID ='{0}'".format(res))
+				
+				conn.commit()
+				# cursor.execute("DELETE FROM Albums WHERE albumID = '{0}'".format(res))
+				# cursor.execute("DELETE FROM Photos WHERE albumID = '{0}'".format(res))
+				# cursor.commit()
+				flash('You have sucessfully deleted your album along with all of its photos!')
+				return render_template('albums.html', myAlbums = getUsersAlbums(userID))
+		return render_template('albums.html', myAlbums = getUsersAlbums(userID))
 
 @app.route('/albums/<albumID>')
 def alltheAlbums(albumID):
-	return render_template('albums.html', messages = "These are all the public albums!")
+	return render_template('albumPictures.html', albumID = albumID, albumPictures = getUserPhotosinAlbum(albumID), base64=base64)
 
 @app.route("/allAlbums")
 def allAlbums():
 	return render_template('albums.html', allAlbums = getAllAlbums())
 
-@app.route("/newAlbum")
-@flask_login.login_required
+@app.route("/newAlbum", methods = ['GET', 'POST'])
 def newAlbum():
-	if request.method == 'POST':
+	if flask_login.current_user.is_authenticated == False:
+		return render_template('unauth.html')
+	else: 
 		ownerID = getUserIdFromEmail(flask_login.current_user.id)
-		albumName = request.form.get['albumName']
-		dateOfCreation = date.today()
-		numPhotos = 0
-		numOfLiked = 0
-		imgfile = request.files['photo']
-		# caption = request.form.get('caption')
-		# photo_data =imgfile.read()
-
-		c1 = conn.cursor()
-		albumID = uuid.uuid4().int & (1<<16)-1
-		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Albums (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked ) VALUES (%s, %s, %s, %s, %s, %s )''', (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked))
-		conn.commit()
-		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(ownerID), base64=base64)
-		#The method is GET so we return a  HTML form to upload the a photo.
-	else:
-		return render_template('albums.html')
-	return render_template('newAlbum.html', messages = "These are all the public albums!")
+		if request.method == 'POST':
+			photoID = request.form #[photoID, ADD]
+			print(photoID)
+			res = ""
+			val = ""
+			newAlbumID = uuid.uuid4().int & (1<<16)-1
+			for key in photoID.keys():
+				for value in photoID.getlist(key):
+					res = key
+					val = value
+					if res == "albumName":
+						albumName = val
+						dateOfCreation = date.today()
+						cursor = conn.cursor()
+						cursor.execute('''INSERT INTO Albums (albumID, albumName, ownerID, dateOfCreation) VALUES (%s, %s, %s, %s)''', (newAlbumID, albumName, ownerID, dateOfCreation))
+						conn.commit()
+					if val == "Add":
+						cursor = conn.cursor()
+						cursor.execute("UPDATE Photos SET albumID = '{0}' WHERE photoID = '{1}'".format(newAlbumID, res))
+						conn.commit()
+			return render_template('albumPictures.html', albumID = newAlbumID, albumPictures = getUserPhotosinAlbum(newAlbumID), base64=base64)
+			#The method is GET so we return a  HTML form to upload the a photo.
+		else:
+			return render_template('newAlbum.html', photos = getUsersPhotos(ownerID, None), base64=base64)
 
 if __name__ == "__main__":
 	#this is invoked when in the shell  you run

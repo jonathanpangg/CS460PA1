@@ -2,9 +2,28 @@
     <title>My Albums</title>
 </head>
     <body>
+        {% if allAlbums %}
         <div class="title">
-            <h1>Photo Albums</h1>
+            <h1>All Photo Albums</h1>
         </div>
+        {% endif %}
+
+        {% if myAlbums %}
+        <div class="title">
+            <h1>My Photo Albums</h1>
+        </div>
+        {% endif %}   
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class=flashes>
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        {% block body %}{% endblock %}
 
         <li><a href='/upload'>Upload a photo</a> </li>
         <li><a href='/allAlbums'>View All Albums</a> </li>
@@ -15,14 +34,14 @@
             {% if allAlbums %}
                 {% for album in allAlbums %}
                 <!-- <li>{{album[1]}}<br> -->
-                    <li><a href='/albums/' + album[0]>album[1]</a> </li>
+                    <li><a href="/albums/{{album[0]}}">{{album[1]}}</a> </li>
                 {% endfor %}
             {% endif %}
 
             {% if myAlbums %}
                 {% for album in myAlbums %}
                 <!-- <li>{{album[1]}}<br> -->
-                    <li><a href='/albums/' + album[0]>album[1]</a> </li>
+                    <li><a href="/albums/{{album[0]}}">{{album[1]}}</a> </li>
                 {% endfor %}
             {% endif %}
 

@@ -33,11 +33,8 @@ CREATE TABLE Albums (
     albumName CHAR(25),
     ownerID INTEGER NOT NULL,
     dateOfCreation Date,
-    numPhotos INTEGER,
-    numOfLiked INTEGER,
     FOREIGN KEY (ownerID) REFERENCES RegisteredUsers(userID),
-    PRIMARY KEY (albumID),
-		CHECK (numOfLiked >= 0)
+    PRIMARY KEY (albumID)
 );
 
 CREATE TABLE Photos (
@@ -50,12 +47,6 @@ CREATE TABLE Photos (
     FOREIGN KEY (albumID) REFERENCES Albums(albumID),
     PRIMARY KEY (photoID),
     FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID)
-);
-
-CREATE TABLE Tags (
-    tagWord CHAR(25),
-    photoID INTEGER NOT NULL,
-    FOREIGN KEY (photoID) REFERENCES Photos(photoID)
 );
 
 CREATE TABLE Comments (
