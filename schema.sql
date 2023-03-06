@@ -4,6 +4,7 @@ USE photoshare;
 DROP TABLE IF EXISTS Friends CASCADE;
 DROP TABLE IF EXISTS Comments CASCADE;
 DROP TABLE IF EXISTS Tags CASCADE;
+DROP TABLE IF EXISTS LikedPhotos CASCADE;
 DROP TABLE IF EXISTS Photos CASCADE;
 DROP TABLE IF EXISTS UnregisteredUsers CASCADE;
 DROP TABLE IF EXISTS Albums CASCADE;
@@ -34,10 +35,8 @@ CREATE TABLE Albums (
     ownerID INTEGER NOT NULL,
     dateOfCreation Date,
     numPhotos INTEGER,
-    numOfLiked INTEGER,
-    FOREIGN KEY (ownerID) REFERENCES RegisteredUsers(userID),
     PRIMARY KEY (albumID),
-		CHECK (numOfLiked >= 0)
+    FOREIGN KEY (ownerID) REFERENCES RegisteredUsers(userID)
 );
 
 CREATE TABLE Photos (
@@ -47,9 +46,18 @@ CREATE TABLE Photos (
     photoData longblob,
     albumID INTEGER,
     tagWord CHAR(25),
-    FOREIGN KEY (albumID) REFERENCES Albums(albumID),
+    numOfLiked INTEGER,
     PRIMARY KEY (photoID),
-    FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID)
+    FOREIGN KEY (albumID) REFERENCES Albums(albumID),
+    FOREIGN KEY (userID) REFERENCES RegisteredUsers(userID),
+		CHECK (numOfLiked >= 0)
+);
+
+CREATE TABLE LikedPhotos (
+	photoID INTEGER NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    FOREIGN KEY (photoID) REFERENCES Photos(photoID),
+    FOREIGN KEY (email) REFERENCES RegisteredUsers(email)
 );
 
 CREATE TABLE Tags (

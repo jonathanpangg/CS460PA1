@@ -23,16 +23,22 @@
             </form>
             
         </div>
-        <ul>
-            {% if allPhotos %}
-                {% for photo in allPhotos %}
-                    <h2>{{photo[2]}}<h2>
-                    <h3>Tags: </h3>
-                    {% for i in photo[3].split(",") %}
-                        <ul> {{i}} </ul>
+        <form method="post" enctype="multipart/form-data" action="/allPhotos"> 
+            <ul>
+                {% if allPhotos %}
+                    {% for photo in allPhotos %}
+                        <h2>{{photo[2]}}<h2>
+                        <h3>Tags: </h3>
+                        {% for i in photo[3].split(",") %}
+                            <ul> {{i}} </ul>
+                        {% endfor %}
+                        <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></br> 
+                        {% if auth %}
+                            <input type="submit" name = "{{photo[1]}}" value = "Like" method = 'POST'>  </br>
+                        {% endif %}
+                        <text> Likes: {{photo[4]}}</text>
                     {% endfor %}
-                    <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></br> 
-                {% endfor %}
-            {% endif %}
-        </ul>
+                {% endif %}
+            </ul>
+        </form>
     </body>

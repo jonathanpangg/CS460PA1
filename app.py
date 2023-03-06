@@ -188,7 +188,7 @@ def getUsersPhotos(uid, tag):
 def getAllPhotos(tags):
 	cursor = conn.cursor()
 	if tags == None:
-		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos")
+		cursor.execute("SELECT photoData, photoID, caption, tagWord, numOfLiked FROM Photos")
 	else: 
 		listOfTags = tags.split(', ')
 		selectStatement = "tagWord LIKE "
@@ -321,9 +321,43 @@ def photos():
 			photo = getUsersPhotos(userID, None)
 			return render_template('photos.html', photos = photo, getTag = None, base64=base64)
 
-@app.route("/allPhotos")
+@app.route("/allPhotos", methods = ['GET', 'POST'])
 def allPhotos():
-	return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), base64=base64)
+    if request.method == 'GET':
+        if User() == None or flask_login.current_user.is_authenticated == False:
+            return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), auth = False, base64=base64)
+        return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), auth = True, base64=base64)
+    else:
+        if User() == None or flask_login.current_user.is_authenticated == False:
+            return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), auth = False, base64=base64)
+        photoID = request.form
+        res = ""
+        for key in photoID.keys():
+            for value in photoID.getlist(key):
+                res = key
+        
+        cursor = conn.cursor()
+        cursor.execute("SELECT numOfLiked FROM Photos WHERE photoID = '{0}'".format(res))
+        likes = cursor.fetchall()[0][0]
+        
+        cursor.execute("SELECT email FROM LikedPhotos WHERE photoID = '{0}'".format(res))
+        users = cursor.fetchall()
+        print(users)
+        for i in users:
+            if i[0] == flask_login.current_user.id:
+                return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), auth = True, base64=base64)
+        
+        
+        if likes == None:
+            likes = 1
+        else:
+            likes += 1
+    	
+        cursor.execute("UPDATE Photos SET numOfLiked = '{0}' WHERE photoID = '{1}'".format(likes, res))
+        cursor.execute("INSERT INTO LikedPhotos (photoID, email) VALUES ('{0}', '{1}')".format(res, flask_login.current_user.id))
+        conn.commit()
+        
+        return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), auth = True, base64=base64)
 
 @app.route('/albums')
 def albums():
@@ -359,7 +393,7 @@ def newAlbum():
 		c1 = conn.cursor()
 		albumID = uuid.uuid4().int & (1<<16)-1
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Albums (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked ) VALUES (%s, %s, %s, %s, %s, %s )''', (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked))
+		cursor.execute('''INSERT INTO Albums (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked) VALUES (%s, %s, %s, %s, %s, %s )''', (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked))
 		conn.commit()
 		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(ownerID), base64=base64)
 		#The method is GET so we return a  HTML form to upload the a photo.
