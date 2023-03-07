@@ -416,9 +416,10 @@ def albums():
 				print(photoIDs)
 				print(photoIDs[0])
 				for x in photoIDs:
-					cursor.execute("DELETE FROM Tags WHERE photoID = '{0}'".format(x[0]))
-					cursor.execute("DELETE FROM Photos WHERE albumID ='{0}'".format(res))
-				
+					cursor.execute("DELETE FROM LikedPhotos WHERE photoID = '{0}'".format(x[0]))
+					cursor.execute("DELETE FROM Comments WHERE photoID = '{0}'".format(x[0]))
+					cursor.execute("DELETE FROM Photos WHERE photoID = '{0}'".format(x[0]))
+				cursor.execute("DELETE FROM Albums WHERE albumID = '{0}'".format(res))				
 				conn.commit()
 				# cursor.execute("DELETE FROM Albums WHERE albumID = '{0}'".format(res))
 				# cursor.execute("DELETE FROM Photos WHERE albumID = '{0}'".format(res))
