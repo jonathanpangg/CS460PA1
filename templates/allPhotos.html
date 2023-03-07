@@ -39,10 +39,10 @@
                     {% if photo[5] != None %}
                         {% for i in commentsInfo %}
                             {% if i[0] == photo[1] %}
-                                {% if i[2] != -1 %}
+                                {% if i[2] != "0" %}
                                     <div> {{i[2]}}: {{i[1]}} - {{i[3]}}</div>
                                 {% endif %}   
-                                {% if i[2] == -1 %}
+                                {% if i[2] == "0" %}
                                     <div> Unregistered User: {{i[1]}} - {{i[3]}}</div>
                                 {% endif %}          
                             {% endif %}

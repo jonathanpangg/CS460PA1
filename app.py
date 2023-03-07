@@ -389,7 +389,7 @@ def allPhotos():
 				owner = cursor.fetchall()
 				print(owner)
 				if flask_login.current_user.is_authenticated == False:
-					cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, ownerID, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}')".format(commentID, comment, res[3:], "-1", owner[0][0],date.today()))
+					cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, ownerID, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}')".format(commentID, comment, res[3:], "0", owner[0][0],date.today()))
 				else:
 					cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, ownerID, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}')".format(commentID, comment, res[3:], flask_login.current_user.id, owner[0][0], date.today()))
 				conn.commit()
