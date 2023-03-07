@@ -410,6 +410,7 @@ def allPhotos():
 		
 		photoID = request.form
 		res = ""
+  
 		for key in photoID.keys():
 			for value in photoID.getlist(key):
 				res = key
@@ -417,10 +418,30 @@ def allPhotos():
 					break 
 				if value == 'Like':		
 					break 
+				if key == 'tagWordAll' and value != '':
+					res = key
+					break
+				if key == 'commentInputAll' and value != '':
+					res = key
+					break
 			else:
 				continue
 			break
-		
+		print(photoID)
+		if res == 'commentInputAll':
+			userID = getUserIdFromEmail(flask_login.current_user.id)
+			comment = request.form.get('commentInputAll')
+			cursor.execute("SELECT email, COUNT(*) AS ccount FROM Comments WHERE textData = '{0}' GROUP BY email ORDER BY ccount DESC".format(comment))
+			data = cursor.fetchall()
+			photo = getUsersPhotos(userID, None)
+			
+			return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(),commentsInfo = getPhotoComments(), auth = True, commentFilter = data, base64=base64)
+		elif res == 'tagWordAll':
+			
+			userID = getUserIdFromEmail(flask_login.current_user.id)
+			value = request.form.get('tagWordAll')
+			photo = getUsersPhotos(userID, value)
+			return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
 		if res[0:3] == 'Com':
 			comment = request.form.get("Text{0}".format(res[3:]))
 			print(comment)
