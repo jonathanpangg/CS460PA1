@@ -67,4 +67,11 @@
                 {% endfor %}
             {% endif %}
         </form>
+        <div> Photos may like: </div>
+        {% if auth %}
+            {% for i in mayLike %}
+                <img src='data:image/jpg;base64, {{ base64.b64encode(i[0]).decode("ascii") }}' width="500" height="600"/></br> 
+                <input type="submit" name = "{{i[1]}}" value = "Like" method = 'POST'> </br>
+            {% endfor %}
+        {% endif %}
     </body>

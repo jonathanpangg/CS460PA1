@@ -324,7 +324,7 @@ def photos():
 	if flask_login.current_user.is_authenticated == False:
 		tag = request.form.get('tagWord')
 		photo = getAllPhotos(tag)
-		return render_template('allPhotos.html', allPhotos = photo, getTag = tag, base64=base64)
+		return render_template('photos.html', allPhotos = photo, getTag = tag, base64=base64)
 	else:
 		userID = getUserIdFromEmail(flask_login.current_user.id)
 
@@ -359,22 +359,55 @@ def photos():
 								data = cursor.fetchall()
 								photo = getUsersPhotos(userID, None)
 								print(data)
-								return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(),commentsInfo = getPhotoComments(), auth = True, commentFilter = data, base64=base64)
+								return render_template('photos.html', allPhotos = photo, popularTags = getMostPopularTags(),commentsInfo = getPhotoComments(), auth = True, commentFilter = data, base64=base64)
 							else:
 								photo = getUsersPhotos(userID, value)
-								return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
+								return render_template('photos.html', allPhotos = photo, popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
 		# get request for all user photos
 		else:
 			photo = getUsersPhotos(userID, None)
-			return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(),commentsInfo = getPhotoComments(), auth = True, base64=base64)
+			return render_template('photos.html', allPhotos = photo, popularTags = getMostPopularTags(),commentsInfo = getPhotoComments(), auth = True, base64=base64)
+
+def getLikedTags():
+    cursor = conn.cursor()
+    cursor.execute("SELECT photoID FROM LikedPhotos WHERE email = '{0}'".format(flask_login.current_user.id))
+    likedPhotos = cursor.fetchall()
+    list = []
+    for i in likedPhotos:
+        cursor.execute("SELECT tagWord FROM PHOTOS WHERE photoID = '{0}'".format(i[0]))
+        tags = cursor.fetchall()[0][0]
+        listOfTags = tags.split(", ")
+        for j in listOfTags:
+            if list.count(j) == 0:
+                list.append(j)
+    return list
 
 @app.route("/allPhotos", methods = ['GET', 'POST'])
 def allPhotos():
 	if request.method == 'GET':
 		if User() == None or flask_login.current_user.is_authenticated == False:
 			return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = False, base64=base64)
-		return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
+
+		cursor = conn.cursor()
+		listOfIds = []
+		for i in getLikedTags():
+			cursor.execute("SELECT photoID FROM Photos WHERE tagWord LIKE '%{0}%'".format(i))
+			l = cursor.fetchall()
+			for j in l:
+				if listOfIds.count(j[0]) == 0:
+					listOfIds.append(j[0])
+    
+		selectStatement = ""
+		for i in range(0, len(listOfIds)):
+			if i + 1 == len(listOfIds):
+				selectStatement += "{0}".format(listOfIds[i])
+			else: 
+				selectStatement +=  "{0}".format(listOfIds[i]) + ' OR photoID = '
+		cursor.execute("SELECT photoData, photoID FROM Photos WHERE photoID = {0}".format(selectStatement))
+		return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), mayLike = cursor.fetchall(), auth = True, base64=base64)
 	else:
+		cursor = conn.cursor()
+		
 		photoID = request.form
 		res = ""
 		for key in photoID.keys():
@@ -388,8 +421,6 @@ def allPhotos():
 				continue
 			break
 		
-		cursor = conn.cursor()
-		print(res)
 		if res[0:3] == 'Com':
 			comment = request.form.get("Text{0}".format(res[3:]))
 			print(comment)
