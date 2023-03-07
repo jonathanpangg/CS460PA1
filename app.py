@@ -366,7 +366,8 @@ def photos():
 		# get request for all user photos
 		else:
 			photo = getUsersPhotos(userID, None)
-			return render_template('photos.html', allPhotos = photo, popularTags = getMostPopularTags(),commentsInfo = getPhotoComments(), auth = True, base64=base64)
+			print(userID)
+			return render_template('photos.html', allPhotos = photo, popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
 
 def getLikedTags():
     cursor = conn.cursor()
@@ -390,21 +391,29 @@ def allPhotos():
 
 		cursor = conn.cursor()
 		listOfIds = []
+		
 		for i in getLikedTags():
 			cursor.execute("SELECT photoID FROM Photos WHERE tagWord LIKE '%{0}%'".format(i))
 			l = cursor.fetchall()
 			for j in l:
 				if listOfIds.count(j[0]) == 0:
 					listOfIds.append(j[0])
-    
+
+		
 		selectStatement = ""
+		val = 0
 		for i in range(0, len(listOfIds)):
 			if i + 1 == len(listOfIds):
+				val += 1
 				selectStatement += "{0}".format(listOfIds[i])
 			else: 
+				val +=1
 				selectStatement +=  "{0}".format(listOfIds[i]) + ' OR photoID = '
-		cursor.execute("SELECT photoData, photoID FROM Photos WHERE photoID = {0}".format(selectStatement))
-		return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), mayLike = cursor.fetchall(), auth = True, base64=base64)
+		if val > 0:
+			print('here')
+			cursor.execute("SELECT photoData, photoID FROM Photos WHERE photoID = {0}".format(selectStatement))
+			return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), mayLike = cursor.fetchall(), auth = True, base64=base64)
+		return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
 	else:
 		cursor = conn.cursor()
 		
@@ -461,6 +470,7 @@ def allPhotos():
 				owner = cursor.fetchall()
 				cursor.execute("SELECT email FROM RegisteredUsers WHERE userID = '{0}'".format(owner[0][0]))
 				getEmail = cursor.fetchall()
+				print(getEmail)
 				if flask_login.current_user.is_authenticated == False:
 					cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, ownerID, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}')".format(commentID, comment, res[3:], "0", owner[0][0],date.today()))
 				else:
