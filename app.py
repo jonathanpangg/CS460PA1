@@ -507,7 +507,6 @@ def topContributors():
 	cursor.execute("SELECT firstName, lastName, contributionScore FROM RegisteredUsers ORDER BY contributionScore DESC")
 	data = cursor.fetchall()
 	print(data)
-	# count = (1., 2., 3., 4., 5., 6., 7., 8., 9., 10.)
 	return render_template('topContributors.html', data = data)
 
 if __name__ == "__main__":
