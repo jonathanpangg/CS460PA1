@@ -188,7 +188,6 @@ def getUsersPhotos(uid, tag):
 def getAllPhotos(tags):
 	cursor = conn.cursor()
 	if tags == None:
-		print('here1')
 		cursor.execute("SELECT photoData, photoID, caption, tagWord, numOfLiked, comments FROM Photos")
 	else: 
 		print('here2')
@@ -390,13 +389,25 @@ def allPhotos():
 				print(newComment)
 				commentID = uuid.uuid4().int & (1<<16)-1
 				cursor.execute("UPDATE Photos SET comments = '{0}' WHERE photoID = '{1}'".format(newComment, res[3:])) 
-				
+				cursor.execute("SELECT userID FROM Photos WHERE photoID = '{0}'".format(res[3:]))
+				owner = cursor.fetchall()
+				cursor.execute("SELECT email FROM RegisteredUsers WHERE userID = '{0}'".format(owner[0][0]))
+				getEmail = cursor.fetchall()
+				print(getEmail)
 				if flask_login.current_user.is_authenticated == False:
-					cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4})".format(commentID, comment, res[3:], -1, date.today()))
+					cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, ownerID, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}')".format(commentID, comment, res[3:], "0", owner[0][0],date.today()))
 				else:
-					cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}')".format(commentID, comment, res[3:], flask_login.current_user.id, date.today()))
+					cursor = conn.cursor()
+					cursor.execute("SELECT photoID, textData, email, commentDate FROM Comments")
+					info = cursor.fetchall()
+					if getEmail[0][0] == flask_login.current_user.id:
+						return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = info, auth = True, base64=base64)
+					cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, ownerID, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}')".format(commentID, comment, res[3:], flask_login.current_user.id, owner[0][0], date.today()))
 				conn.commit()
 		else:
+			cursor = conn.cursor()
+			cursor.execute("SELECT photoID, textData, email, commentDate FROM Comments")
+			info = cursor.fetchall()
 			cursor.execute("SELECT numOfLiked FROM Photos WHERE photoID = '{0}'".format(res))
 			likes = cursor.fetchall()[0][0]
 			cursor.execute("SELECT email FROM LikedPhotos WHERE photoID = '{0}'".format(res))
@@ -404,7 +415,7 @@ def allPhotos():
 			
 			for i in users:
 				if i[0] == flask_login.current_user.id:
-					return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), auth = True, base64=base64)
+					return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = info, auth = True, base64=base64)
 			if likes == None:
 				likes = 1
 			else:
