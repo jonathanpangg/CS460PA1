@@ -141,7 +141,6 @@ def friends():
                     friendRecc = temp
                     print("This is friendRecc:" + str(friendRecc))
             print(friendRecc)
-            print(friendRecc[0])
             count = 1
             firstName = ""
             lastName = ""
