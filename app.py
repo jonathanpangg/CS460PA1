@@ -234,15 +234,13 @@ def isEmailUnique(email):
 def updateContributionScore():
 	uid = getUserIdFromEmail(flask_login.current_user.id)
 	cursor = conn.cursor()
-	cursor.execute("SELECT COUNT(*) FROM RegisteredUsers WHERE userID = '{0}'".format(uid))
+	cursor.execute("SELECT COUNT(*) FROM Photos WHERE userID = '{0}'".format(uid))
 	photoCount = cursor.fetchall()[0][0]
 	cursor.execute("SELECT COUNT(*) FROM Comments WHERE email = '{0}' AND ownerID <> '{1}'".format(flask_login.current_user.id, uid))
 	commentCount = cursor.fetchall()[0][0]
 	cursor.execute("UPDATE RegisteredUsers SET contributionScore = '{0}' WHERE userID = '{1}'".format(commentCount + photoCount, uid))
 	conn.commit()
 	print(photoCount + commentCount)
-
-
 
 def getMostPopularTags():
     dict = {}
@@ -501,6 +499,16 @@ def newAlbum():
 			#The method is GET so we return a  HTML form to upload the a photo.
 		else:
 			return render_template('newAlbum.html', photos = getUsersPhotos(ownerID, None), base64=base64)
+		
+@app.route("/Leaderboard")
+def topContributors():
+	updateContributionScore()
+	cursor = conn.cursor()
+	cursor.execute("SELECT firstName, lastName, contributionScore FROM RegisteredUsers ORDER BY contributionScore DESC")
+	data = cursor.fetchall()
+	print(data)
+	# count = (1., 2., 3., 4., 5., 6., 7., 8., 9., 10.)
+	return render_template('topContributors.html', data = data)
 
 if __name__ == "__main__":
 	#this is invoked when in the shell  you run

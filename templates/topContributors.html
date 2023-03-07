@@ -1,0 +1,21 @@
+<!doctype html>
+<title>Top Contributors:</title>
+
+<div class="title">
+    <h1>Top 10 Contributors!</h1>
+</div>
+
+<ul>
+            
+    {% if data %}
+        {% for user in data %}
+            {{count}} {{user[0]}} {{user[1]}} Score: {{user[2]}} <br>
+        {% endfor %}
+    {% endif %}
+
+</ul>
+
+<ul>
+<li><a href='/logout'>Logout</a></li>
+<li><a href='/'>Home</a></li>
+</ul>
