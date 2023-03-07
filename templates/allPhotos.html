@@ -18,7 +18,7 @@
         <div>
             <form method="post" enctype="multipart/form-data" action="/photos"> 
                 <label for="tag">Filter by tag:</label>
-                <input type="text" name="tagWord" required='true' method = 'post' /><br />
+                <input type="text" name="tagWord" required = 'true' method = 'post' /><br />
                 <input type="submit" value = "Submit" method = 'post'>
             </form>
         </div>
@@ -39,7 +39,12 @@
                     {% if photo[5] != None %}
                         {% for i in commentsInfo %}
                             {% if i[0] == photo[1] %}
-                                <div> {{i[2]}}: {{i[1]}} - {{i[3]}}</div>
+                                {% if i[2] != -1 %}
+                                    <div> {{i[2]}}: {{i[1]}} - {{i[3]}}</div>
+                                {% endif %}   
+                                {% if i[2] == -1 %}
+                                    <div> Unregistered User: {{i[1]}} - {{i[3]}}</div>
+                                {% endif %}          
                             {% endif %}
                         {% endfor %}
 
@@ -48,7 +53,7 @@
                         <div> None </div>
                     {% endif %}
                     <label for="comment">Add comment: </label>
-                    <input type="text" name="{{photo[1]}}" method = 'post' /><br />
+                    <input type="text" name="Text{{photo[1]}}" method = 'post' /><br />
                     <input type="submit" name = "Com{{photo[1]}}" value = "Add" method = 'post'> 
                 {% endfor %}
             {% endif %}
