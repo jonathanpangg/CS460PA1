@@ -228,8 +228,7 @@ def getAllPhotos(tags):
 	cursor = conn.cursor()
 	if tags == None:
 		cursor.execute("SELECT photoData, photoID, caption, tagWord, numOfLiked, comments FROM Photos")
-	else: 
-		print('here2')
+	else:
 		listOfTags = tags.split(', ')
 		selectStatement = "tagWord LIKE "
 		for i in range(0, len(listOfTags)):
@@ -237,7 +236,8 @@ def getAllPhotos(tags):
 				selectStatement += '\'%' + listOfTags[i] + '%\''
 			else: 
 				selectStatement += '\'%' + listOfTags[i] + '%\' OR tagWord LIKE '
-		cursor.execute("SELECT photoData, photoID, caption, tagWord, numOfLiked, comments FROM Photos WHERE userID = ({0})".format(selectStatement))
+		cursor.execute("SELECT photoData, photoID, caption, tagWord, numOfLiked, comments FROM Photos WHERE ({0})".format(selectStatement))
+		print("SELECT photoData, photoID, caption, tagWord, numOfLiked, comments FROM Photos WHERE ({0})".format(selectStatement))
 	return cursor.fetchall()
 
 def getUserIdFromEmail(email):
@@ -463,6 +463,7 @@ def allPhotos():
 					break 
 				if key == 'tagWordAll' and value != '':
 					res = key
+					
 					break
 				if key == 'commentInputAll' and value != '':
 					res = key
@@ -476,14 +477,12 @@ def allPhotos():
 			comment = request.form.get('commentInputAll')
 			cursor.execute("SELECT email, COUNT(*) AS ccount FROM Comments WHERE textData = '{0}' GROUP BY email ORDER BY ccount DESC".format(comment))
 			data = cursor.fetchall()
-			photo = getUsersPhotos(userID, None)
+			photo = getAllPhotos(None)
 			
 			return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(),commentsInfo = getPhotoComments(), auth = True, commentFilter = data, base64=base64)
 		elif res == 'tagWordAll':
-			
-			userID = getUserIdFromEmail(flask_login.current_user.id)
 			value = request.form.get('tagWordAll')
-			photo = getUsersPhotos(userID, value)
+			photo = getAllPhotos(value)
 			return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
 		if res[0:3] == 'Com':
 			comment = request.form.get("Text{0}".format(res[3:]))
