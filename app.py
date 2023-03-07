@@ -365,6 +365,8 @@ def allPhotos():
 				res = key
 				if value == 'Add':
 					break 
+				if value == 'Like':
+					break
 			else:
 				continue
 			break
