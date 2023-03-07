@@ -121,15 +121,50 @@ def friends():
     flask.user = flask_login.current_user.get_id()
     cursor = conn.cursor()
     if request.method == 'GET':
-        try:
+        # try:
             cursor.execute("SELECT friendEmail FROM Friends WHERE userEmail = '{0}'".format(flask.user))
-            return render_template('friends.html', data = cursor.fetchall())
-        except:
-            return render_template('friends.html', data = 'You have no friends :)')
-    # post request for adding friends
+            data = cursor.fetchall()
+            cursor.execute("SELECT hometown FROM RegisteredUsers WHERE userID ='{0}'".format(getUserIdFromEmail(flask_login.current_user.id)))
+            uhometown = cursor.fetchall()[0][0]
+            cursor.execute("SELECT lastName FROM RegisteredUsers WHERE userID ='{0}'".format(getUserIdFromEmail(flask_login.current_user.id)))
+            ulastName = cursor.fetchall()[0][0]
+            cursor.execute("SELECT firstName, lastName, email FROM RegisteredUsers WHERE (hometown ='{0}' OR lastName = '{1}') AND email <> '{2}' ".format(uhometown, ulastName, flask_login.current_user.id))
+            friendRecc = ()
+            potential = cursor.fetchall()
+            print(potential)
+            for x in range(len(potential)):
+                cursor.execute("SELECT * FROM Friends WHERE friendEmail ='{0}'".format(potential[x][2]))
+                friendResult = cursor.fetchall()
+                print("True if friends:" + str(friendResult))
+                if len(friendResult) != 0:
+                    temp = friendRecc + tuple(potential[x])
+                    friendRecc = temp
+                    print("This is friendRecc:" + str(friendRecc))
+            print(friendRecc)
+            print(friendRecc[0])
+            count = 1
+            firstName = ""
+            lastName = ""
+            email = ""
+            list = []
+            for i in friendRecc:
+                if count % 3 == 0:
+                    email = i
+                    val = (firstName, lastName, email)
+                    list.append(val)
+                elif count % 3 == 1:
+                    firstName = i
+                else:
+                    lastName = i
+                count += 1
+            print(list)
+            return render_template('friends.html', data = data, friendRecc = list)
+        # except:
+        #     return render_template('friends.html', data = 'You have no friends :)')
     else:
         friendID = request.form['caption']
         cursor.execute("INSERT INTO Friends(userEmail, friendEmail) VALUES ('{0}', '{1}')".format(flask.user, friendID))
+        cursor.execute("INSERT INTO Friends(userEmail, friendEmail) VALUES ('{0}', '{1}')".format(friendID, flask.user))
         conn.commit()
         return flask.redirect(flask.url_for('friends'), code = 303)
     
