@@ -56,9 +56,7 @@ CREATE TABLE Photos (
 
 CREATE TABLE LikedPhotos (
 	photoID INTEGER NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    FOREIGN KEY (photoID) REFERENCES Photos(photoID),
-    FOREIGN KEY (email) REFERENCES RegisteredUsers(email)
+    email VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE Comments (
@@ -66,9 +64,11 @@ CREATE TABLE Comments (
     textData VARCHAR(500),
     photoID INTEGER NOT NULL,
     email VARCHAR(255),
+    ownerID INTEGER NOT NULL,
     commentDate Date,
     PRIMARY KEY (commentID),
-    FOREIGN KEY (photoID) REFERENCES Photos(photoID)
+    FOREIGN KEY (photoID) REFERENCES Photos(photoID),
+    FOREIGN KEY (ownerID) REFERENCES Photos(userID)
 );
 
 -- To get first and last name, use a select statement with registered user and friend id
