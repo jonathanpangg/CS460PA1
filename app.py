@@ -230,6 +230,19 @@ def isEmailUnique(email):
 		return True
 #end login code
 
+def updateContributionScore():
+	uid = getUserIdFromEmail(flask_login.current_user.id)
+	cursor = conn.cursor()
+	cursor.execute("SELECT COUNT(*) FROM RegisteredUsers WHERE userID = '{0}'".format(uid))
+	photoCount = cursor.fetchall()[0][0]
+	cursor.execute("SELECT COUNT(*) FROM Comments WHERE email = '{0}'".format(flask_login.current_user.id))
+	commentCount = cursor.fetchall()[0][0]
+	cursor.execute("UPDATE RegisteredUsers SET contributionScore = '{0}' WHERE userID = '{1}'".format(commentCount + photoCount, uid))
+	conn.commit()
+	print(photoCount + commentCount)
+
+
+
 def getMostPopularTags():
     dict = {}
     cursor = conn.cursor()
@@ -255,7 +268,11 @@ def getMostPopularTags():
 @app.route('/profile')
 @flask_login.login_required
 def protected():
-	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile")
+	updateContributionScore()
+	cursor = conn.cursor()
+	cursor.execute("SELECT contributionScore FROM RegisteredUsers WHERE userID = '{0}'".format(getUserIdFromEmail(flask_login.current_user.id)))
+	contributionScore = cursor.fetchall()[0][0]
+	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile", contributionScore = contributionScore)
     
 #begin photo uploading code
 # photos uploaded using base64 encoding so they can be directly embeded in HTML
@@ -291,7 +308,12 @@ def upload_file():
 def hello():
 	if flask_login.current_user.is_authenticated == False:
 		return render_template('loggedOut.html', message='Welecome to Photoshare')
-	return render_template('hello.html', message='Welecome to Photoshare')
+	
+	updateContributionScore()
+	cursor = conn.cursor()
+	cursor.execute("SELECT contributionScore FROM RegisteredUsers WHERE userID = '{0}'".format(getUserIdFromEmail(flask_login.current_user.id)))
+	contributionScore = cursor.fetchall()[0][0]
+	return render_template('hello.html', message='Welecome to Photoshare', contributionScore = contributionScore)
 
 @app.route("/photos", methods = ['GET', 'POST'])
 def photos():
