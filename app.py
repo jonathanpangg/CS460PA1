@@ -345,13 +345,28 @@ def photos():
 				return render_template('photos.html', photos = photo, getTag = None, base64=base64)
 			# post request for filter by tags
 			else: 
-				tag = request.form.get('tagWord')
-				photo = getUsersPhotos(userID, tag)
-				return render_template('photos.html', photos = photo, getTag = tag, base64=base64)
+				cursor = conn.cursor()
+				id = request.form
+				res = ""
+				for key in id.keys():
+					for value in id.getlist(key):
+						res = key
+						if value != '':
+							if key == 'commentInput':
+								# SELECT userID,COUNT(*) AS ccount FROM Comment WHERE text='[comment]' GROUP BY userID ORDER BY ccount DESC
+								comment = request.form.get('commentInput')
+								cursor.execute("SELECT email, COUNT(*) AS ccount FROM Comments WHERE textData = '{0}' GROUP BY email ORDER BY ccount DESC".format(comment))
+								data = cursor.fetchall()
+								photo = getUsersPhotos(userID, None)
+								print(data)
+								return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(),commentsInfo = getPhotoComments(), auth = True, commentFilter = data, base64=base64)
+							else:
+								photo = getUsersPhotos(userID, value)
+								return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
 		# get request for all user photos
 		else:
 			photo = getUsersPhotos(userID, None)
-			return render_template('photos.html', photos = photo, getTag = None, base64=base64)
+			return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(),commentsInfo = getPhotoComments(), auth = True, base64=base64)
 
 @app.route("/allPhotos", methods = ['GET', 'POST'])
 def allPhotos():

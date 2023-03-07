@@ -18,11 +18,20 @@
         <div>
             <form method="post" enctype="multipart/form-data" action="/photos"> 
                 <label for="tag">Filter by tag:</label>
-                <input type="text" name="tagWord" required = 'true' method = 'post' /><br />
+                <input type="text" name="tagWord" method = 'post' /><br />
+                <input type="submit" value = "Submit" method = 'post'> </br>
+                <label for="commentLabel">Filter by comment:</label>
+                <input type="text" name="commentInput" method = 'post' /><br />
                 <input type="submit" value = "Submit" method = 'post'>
             </form>
         </div>
         <form method="post" enctype="multipart/form-data" action="/allPhotos"> 
+            {% if commentFilter %}
+            <div> Comment Search: </div>
+                {% for i in commentFilter %}
+                    <div> {{i[0]}} </div>
+                {% endfor %}
+            {% endif %}
             {% if allPhotos %}
                 {% for photo in allPhotos %}
                     <h3>{{photo[2]}}</h3>
