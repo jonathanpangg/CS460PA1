@@ -16,13 +16,22 @@
         </br>
 
         <div>
-            <form method="post" enctype="multipart/form-data" action="/photos"> 
+            <form method="post" enctype="multipart/form-data" action="/allPhotos"> 
                 <label for="tag">Filter by tag:</label>
-                <input type="text" name="tagWord" required = 'true' method = 'post' /><br />
+                <input type="text" name="tagWordAll" method = 'post' /><br />
+                <input type="submit" value = "Submit" method = 'post'> </br>
+                <label for="commentLabel">Filter by comment:</label>
+                <input type="text" name="commentInputAll" method = 'post' /><br />
                 <input type="submit" value = "Submit" method = 'post'>
             </form>
         </div>
         <form method="post" enctype="multipart/form-data" action="/allPhotos"> 
+            {% if commentFilter %}
+            <div> Comment Search: </div>
+                {% for i in commentFilter %}
+                    <div> {{i[0]}} </div>
+                {% endfor %}
+            {% endif %}
             {% if allPhotos %}
                 {% for photo in allPhotos %}
                     <h3>{{photo[2]}}</h3>
@@ -58,4 +67,11 @@
                 {% endfor %}
             {% endif %}
         </form>
+        <div> Photos may like: </div>
+        {% if auth %}
+            {% for i in mayLike %}
+                <img src='data:image/jpg;base64, {{ base64.b64encode(i[0]).decode("ascii") }}' width="500" height="600"/></br> 
+                <input type="submit" name = "{{i[1]}}" value = "Like" method = 'POST'> </br>
+            {% endfor %}
+        {% endif %}
     </body>
