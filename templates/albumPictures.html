@@ -1,0 +1,24 @@
+<head>
+    <title>Album Pictures</title>
+</head>
+    <body>
+        <div class="title">
+            <h1>These are all the pictures on your album!</h1>
+        </div>
+
+        <li><a href='/upload'>Upload a photo</a> </li>
+        <li><a href='/'>Home</a></li>
+        <form method="POST" enctype="multipart/form-data" action="/albums"> 
+        <ul>  
+            {% if albumPictures %}
+                {% for photo in albumPictures %}
+                <h3>Tags: {{photo[3]}} </h3>
+                <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></li>
+                <li>Caption: {{photo[2]}}<br>
+                {% endfor %}
+            {% endif %}
+        </ul>
+            <input type="submit" name = {{albumID}} value = "Delete This Album" method = 'POST'> 
+            WARNING: All Pictures in this album will also be deleted from your collection of Photos!
+        </form>
+    </body>

@@ -8,13 +8,70 @@
 
         <li><a href='/upload'>Upload a photo</a> </li>
         <li><a href='/'>Home</a></li>
-        <ul>
-            
-            {% if allPhotos %}
-                {% for photo in allPhotos %}
-                <li>{{photo[2]}}<br>
-                <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></li>
+        <div> 
+            <h3> Top 3 Tags</h3>
+            {% for tag in popularTags %}
+                <div> {{tag}} </div>
+            {% endfor %}
+        </br>
+
+        <div>
+            <form method="post" enctype="multipart/form-data" action="/allPhotos"> 
+                <label for="tag">Filter by tag:</label>
+                <input type="text" name="tagWordAll" method = 'post' /><br />
+                <input type="submit" value = "Submit" method = 'post'> </br>
+                <label for="commentLabel">Filter by comment:</label>
+                <input type="text" name="commentInputAll" method = 'post' /><br />
+                <input type="submit" value = "Submit" method = 'post'>
+            </form>
+        </div>
+        <form method="post" enctype="multipart/form-data" action="/allPhotos"> 
+            {% if commentFilter %}
+            <div> Comment Search: </div>
+                {% for i in commentFilter %}
+                    <div> {{i[0]}} </div>
                 {% endfor %}
             {% endif %}
-        </ul>
+            {% if allPhotos %}
+                {% for photo in allPhotos %}
+                    <h3>{{photo[2]}}</h3>
+                    <div>Tags: </div>
+                    {% for i in photo[3].split(",") %}
+                        <div> {{i}} </div>
+                    {% endfor %}
+                    <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></br> 
+                    <text> Likes: {{photo[4]}}</br>
+                    {% if auth %}
+                        <input type="submit" name = "{{photo[1]}}" value = "Like" method = 'POST'> </br>
+                    {% endif %}
+                    <div>Comments: </div>
+                    {% if photo[5] != None %}
+                        {% for i in commentsInfo %}
+                            {% if i[0] == photo[1] %}
+                                {% if i[2] != "0" %}
+                                    <div> {{i[2]}}: {{i[1]}} - {{i[3]}}</div>
+                                {% endif %}   
+                                {% if i[2] == "0" %}
+                                    <div> Unregistered User: {{i[1]}} - {{i[3]}}</div>
+                                {% endif %}          
+                            {% endif %}
+                        {% endfor %}
+
+                    {% endif %}
+                    {% if photo[5] == None %}
+                        <div> None </div>
+                    {% endif %}
+                    <label for="comment">Add comment: </label>
+                    <input type="text" name="Text{{photo[1]}}" method = 'post' /><br />
+                    <input type="submit" name = "Com{{photo[1]}}" value = "Add" method = 'post'> 
+                {% endfor %}
+            {% endif %}
+        </form>
+        <div> Photos may like: </div>
+        {% if auth %}
+            {% for i in mayLike %}
+                <img src='data:image/jpg;base64, {{ base64.b64encode(i[0]).decode("ascii") }}' width="500" height="600"/></br> 
+                <input type="submit" name = "{{i[1]}}" value = "Like" method = 'POST'> </br>
+            {% endfor %}
+        {% endif %}
     </body>

@@ -1,5 +1,5 @@
 <head>
-    <title>My Albums</title>
+    <title>Create a new Album</title>
 </head>
     <body>
         <div class="title">
@@ -8,17 +8,33 @@
 
         <li><a href='/albums'>View Your Albums</a> </li>
         <li><a href='/allAlbums'>View All Albums</a> </li>
+        <li><a href='/photos'>View Your Photos</a> </li>
         <li><a href='/'>Home</a></li>
 
         <form method="post" enctype="multipart/form-data" action="/newAlbum">
 
             <label for="albumName">Album Name:</label>
             <input type="text" name="albumName" required='true' /><br />
+            <ul>
+                {% if photos %}
+                    {% for photo in photos %}
+                        <h3>{{photo[2]}}<h3>
+                        <h3>Tags: </h3>
+                        {% for i in photo[3].split(",") %}
+                            <ul> {{i}} </ul>
+                        {% endfor %}
+                        
+                        <img src='data:image/jpg;base64, {{ base64.b64encode(photo[0]).decode("ascii") }}' width="500" height="600"/></br>
+                        <input type="checkbox" name="{{photo[1]}}"  value=Add> Add to Album<br>
 
+                    {% endfor %}
+                    <input type="submit" value="Create" method = 'POST' />
+                {% endif %}
+            </ul>
+        </form>
             <!-- <label for="photo">Select photo:</label>
             <input type="file" name="photo" required='true' /><br />
             <label for="caption">Please caption:</label>
             <input type="text" name="caption" required='true' /><br /> -->
-            <input type="submit" value="Create" />
         </form>
     </body>

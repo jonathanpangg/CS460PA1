@@ -32,6 +32,11 @@ def getUserList():
 	cursor.execute("SELECT email from RegisteredUsers")
 	return cursor.fetchall()
 
+def getPhotoComments():
+    cursor = conn.cursor()
+    cursor.execute("SELECT photoID, textData, email, commentDate FROM Comments")
+    return cursor.fetchall()
+
 # class registeredUser(mysql.app):
 # 	userID = mysql.Column(mysql.Integer, primary_key = True)
 # 	firstName = mysql.Column(mysql.CHAR(25))
@@ -116,15 +121,49 @@ def friends():
     flask.user = flask_login.current_user.get_id()
     cursor = conn.cursor()
     if request.method == 'GET':
-        try:
+        # try:
             cursor.execute("SELECT friendEmail FROM Friends WHERE userEmail = '{0}'".format(flask.user))
-            return render_template('friends.html', data = cursor.fetchall())
-        except:
-            return render_template('friends.html', data = 'You have no friends :)')
-    # post request for adding friends
+            data = cursor.fetchall()
+            cursor.execute("SELECT hometown FROM RegisteredUsers WHERE userID ='{0}'".format(getUserIdFromEmail(flask_login.current_user.id)))
+            uhometown = cursor.fetchall()[0][0]
+            cursor.execute("SELECT lastName FROM RegisteredUsers WHERE userID ='{0}'".format(getUserIdFromEmail(flask_login.current_user.id)))
+            ulastName = cursor.fetchall()[0][0]
+            cursor.execute("SELECT firstName, lastName, email FROM RegisteredUsers WHERE (hometown ='{0}' OR lastName = '{1}') AND email <> '{2}' ".format(uhometown, ulastName, flask_login.current_user.id))
+            friendRecc = ()
+            potential = cursor.fetchall()
+            print(potential)
+            for x in range(len(potential)):
+                cursor.execute("SELECT * FROM Friends WHERE friendEmail ='{0}'".format(potential[x][2]))
+                friendResult = cursor.fetchall()
+                print("True if friends:" + str(friendResult))
+                if len(friendResult) != 0:
+                    temp = friendRecc + tuple(potential[x])
+                    friendRecc = temp
+                    print("This is friendRecc:" + str(friendRecc))
+            print(friendRecc)
+            count = 1
+            firstName = ""
+            lastName = ""
+            email = ""
+            list = []
+            for i in friendRecc:
+                if count % 3 == 0:
+                    email = i
+                    val = (firstName, lastName, email)
+                    list.append(val)
+                elif count % 3 == 1:
+                    firstName = i
+                else:
+                    lastName = i
+                count += 1
+            print(list)
+            return render_template('friends.html', data = data, friendRecc = list)
+        # except:
+        #     return render_template('friends.html', data = 'You have no friends :)')
     else:
         friendID = request.form['caption']
         cursor.execute("INSERT INTO Friends(userEmail, friendEmail) VALUES ('{0}', '{1}')".format(flask.user, friendID))
+        cursor.execute("INSERT INTO Friends(userEmail, friendEmail) VALUES ('{0}', '{1}')".format(friendID, flask.user))
         conn.commit()
         return flask.redirect(flask.url_for('friends'), code = 303)
     
@@ -185,9 +224,20 @@ def getUsersPhotos(uid, tag):
 		cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE userID = '{0}' AND ({1})".format(uid, selectStatement))
 	return cursor.fetchall() #NOTE return a list of tuples, [(photoData, pid, caption), ...]
 
-def getAllPhotos():
+def getAllPhotos(tags):
 	cursor = conn.cursor()
-	cursor.execute("SELECT photoData, photoID, caption FROM Photos")
+	if tags == None:
+		cursor.execute("SELECT photoData, photoID, caption, tagWord, numOfLiked, comments FROM Photos")
+	else:
+		listOfTags = tags.split(', ')
+		selectStatement = "tagWord LIKE "
+		for i in range(0, len(listOfTags)):
+			if i + 1 == len(listOfTags):
+				selectStatement += '\'%' + listOfTags[i] + '%\''
+			else: 
+				selectStatement += '\'%' + listOfTags[i] + '%\' OR tagWord LIKE '
+		cursor.execute("SELECT photoData, photoID, caption, tagWord, numOfLiked, comments FROM Photos WHERE ({0})".format(selectStatement))
+		print("SELECT photoData, photoID, caption, tagWord, numOfLiked, comments FROM Photos WHERE ({0})".format(selectStatement))
 	return cursor.fetchall()
 
 def getUserIdFromEmail(email):
@@ -205,6 +255,11 @@ def getAllAlbums():
 	cursor.execute("SELECT * FROM Albums")
 	return cursor.fetchall()
 
+def getUserPhotosinAlbum(albumID):
+	cursor = conn.cursor()
+	cursor.execute("SELECT photoData, photoID, caption, tagWord FROM Photos WHERE albumID = '{0}'".format(albumID))
+	return cursor.fetchall()
+
 def isEmailUnique(email):
 	#use this to check if a email has already been registered
 	cursor = conn.cursor()
@@ -215,10 +270,47 @@ def isEmailUnique(email):
 		return True
 #end login code
 
+def updateContributionScore():
+	uid = getUserIdFromEmail(flask_login.current_user.id)
+	cursor = conn.cursor()
+	cursor.execute("SELECT COUNT(*) FROM Photos WHERE userID = '{0}'".format(uid))
+	photoCount = cursor.fetchall()[0][0]
+	cursor.execute("SELECT COUNT(*) FROM Comments WHERE email = '{0}' AND ownerID <> '{1}'".format(flask_login.current_user.id, uid))
+	commentCount = cursor.fetchall()[0][0]
+	cursor.execute("UPDATE RegisteredUsers SET contributionScore = '{0}' WHERE userID = '{1}'".format(commentCount + photoCount, uid))
+	conn.commit()
+	print(photoCount + commentCount)
+
+def getMostPopularTags():
+    dict = {}
+    cursor = conn.cursor()
+    cursor.execute("SELECT tagWord From Photos")
+    
+    for i in cursor.fetchall():
+        list = i[0].split(", ")
+        for j in list: 
+            if j in dict:
+                dict[j] += 1
+            else:
+                dict[j] = 1
+    
+    sortedDict = sorted(dict.items(), key=lambda x:x[1], reverse = True)
+    res = []
+    if len(sortedDict) < 3:
+        for i in range(0, len(sortedDict)):
+            res.append(sortedDict[i][0])
+    else:
+        res = [sortedDict[0][0], sortedDict[1][0], sortedDict[2][0]]
+    return res
+    
 @app.route('/profile')
 @flask_login.login_required
 def protected():
-	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile")
+	updateContributionScore()
+	cursor = conn.cursor()
+	cursor.execute("SELECT contributionScore FROM RegisteredUsers WHERE userID = '{0}'".format(getUserIdFromEmail(flask_login.current_user.id)))
+	contributionScore = cursor.fetchall()[0][0]
+	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile", contributionScore = contributionScore)
     
 #begin photo uploading code
 # photos uploaded using base64 encoding so they can be directly embeded in HTML
@@ -236,14 +328,15 @@ def upload_file():
 		tag = request.form.get('tag')
 		photo_data =imgfile.read()
 
-		c1 = conn.cursor()
 		photoID = uuid.uuid4().int & (1<<16)-1
 		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData, albumID, tagWord) VALUES (%s, %s, %s, %s, %s, %s)''', (photoID, userID, caption, photo_data, None, tag))
-		cursor.execute("INSERT INTO Tags (tagWord, photoID) VALUES ('{0}', '{1}')".format(tag, photoID))
+		if tag != None:
+			cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData, albumID, tagWord, comments) VALUES (%s, %s, %s, %s, %s, %s, %s)''', (photoID, userID, caption, photo_data, None, tag, None))
+		else:
+			cursor.execute('''INSERT INTO Photos (photoID, userID, caption, photoData, albumID, tagWord, comments) VALUES (%s, %s, %s, %s, %s, %s, %s)''', (photoID, userID, caption, photo_data, None, None, None))
 		conn.commit()
 		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(userID, None), base64=base64)
-		#The method is GET so we return a  HTML form to upload the a photo.
+		#The method is GET so we return a HTML form to upload the a photo.
 	else:
 		return render_template('upload.html')
 #end photo uploading code
@@ -253,17 +346,24 @@ def upload_file():
 def hello():
 	if flask_login.current_user.is_authenticated == False:
 		return render_template('loggedOut.html', message='Welecome to Photoshare')
-	return render_template('hello.html', message='Welecome to Photoshare')
+	
+	updateContributionScore()
+	cursor = conn.cursor()
+	cursor.execute("SELECT contributionScore FROM RegisteredUsers WHERE userID = '{0}'".format(getUserIdFromEmail(flask_login.current_user.id)))
+	contributionScore = cursor.fetchall()[0][0]
+	return render_template('hello.html', message='Welecome to Photoshare', contributionScore = contributionScore)
 
 @app.route("/photos", methods = ['GET', 'POST'])
 def photos():
 	if flask_login.current_user.is_authenticated == False:
-		return render_template('allPhotos.html', allPhotos = getAllPhotos(), base64=base64)
+		tag = request.form.get('tagWord')
+		photo = getAllPhotos(tag)
+		return render_template('photos.html', allPhotos = photo, getTag = tag, base64=base64)
 	else:
 		userID = getUserIdFromEmail(flask_login.current_user.id)
 
 		if request.method == 'POST':
-			photoID = request.form
+			photoID = request.form # [photoID, 'Delete']
 			res = ""
 			val = ""
 			for key in photoID.keys():
@@ -273,66 +373,245 @@ def photos():
 			# delete request
 			if val == "Delete":
 				cursor = conn.cursor()
-				cursor.execute("DELETE FROM Tags WHERE photoID = '{0}'".format(res))
 				cursor.execute("DELETE FROM Photos WHERE photoID = '{0}'".format(res))
 				conn.commit()
 				photo = getUsersPhotos(userID, None)
 				return render_template('photos.html', photos = photo, getTag = None, base64=base64)
 			# post request for filter by tags
 			else: 
-				tag = request.form.get('tagWord')
-				photo = getUsersPhotos(userID, tag)
-				return render_template('photos.html', photos = photo, getTag = tag, base64=base64)
+				cursor = conn.cursor()
+				id = request.form
+				res = ""
+				for key in id.keys():
+					for value in id.getlist(key):
+						res = key
+						if value != '':
+							if key == 'commentInput':
+								# SELECT userID,COUNT(*) AS ccount FROM Comment WHERE text='[comment]' GROUP BY userID ORDER BY ccount DESC
+								comment = request.form.get('commentInput')
+								cursor.execute("SELECT email, COUNT(*) AS ccount FROM Comments WHERE textData = '{0}' GROUP BY email ORDER BY ccount DESC".format(comment))
+								data = cursor.fetchall()
+								photo = getUsersPhotos(userID, None)
+								print(data)
+								return render_template('photos.html', allPhotos = photo, popularTags = getMostPopularTags(),commentsInfo = getPhotoComments(), auth = True, commentFilter = data, base64=base64)
+							else:
+								photo = getUsersPhotos(userID, value)
+								return render_template('photos.html', allPhotos = photo, popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
 		# get request for all user photos
 		else:
 			photo = getUsersPhotos(userID, None)
-			return render_template('photos.html', photos = photo, getTag = None, base64=base64)
+			print(userID)
+			return render_template('photos.html', allPhotos = photo, popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
 
-@app.route("/allPhotos")
+def getLikedTags():
+    cursor = conn.cursor()
+    cursor.execute("SELECT photoID FROM LikedPhotos WHERE email = '{0}'".format(flask_login.current_user.id))
+    likedPhotos = cursor.fetchall()
+    list = []
+    for i in likedPhotos:
+        cursor.execute("SELECT tagWord FROM PHOTOS WHERE photoID = '{0}'".format(i[0]))
+        tags = cursor.fetchall()[0][0]
+        listOfTags = tags.split(", ")
+        for j in listOfTags:
+            if list.count(j) == 0:
+                list.append(j)
+    return list
+
+@app.route("/allPhotos", methods = ['GET', 'POST'])
 def allPhotos():
-	return render_template('allPhotos.html', allPhotos = getAllPhotos(), base64=base64)
+	if request.method == 'GET':
+		if User() == None or flask_login.current_user.is_authenticated == False:
+			return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = False, base64=base64)
 
-@app.route('/albums')
+		cursor = conn.cursor()
+		listOfIds = []
+		
+		for i in getLikedTags():
+			cursor.execute("SELECT photoID FROM Photos WHERE tagWord LIKE '%{0}%'".format(i))
+			l = cursor.fetchall()
+			for j in l:
+				if listOfIds.count(j[0]) == 0:
+					listOfIds.append(j[0])
+
+		
+		selectStatement = ""
+		val = 0
+		for i in range(0, len(listOfIds)):
+			if i + 1 == len(listOfIds):
+				val += 1
+				selectStatement += "{0}".format(listOfIds[i])
+			else: 
+				val +=1
+				selectStatement +=  "{0}".format(listOfIds[i]) + ' OR photoID = '
+		if val > 0:
+			print('here')
+			cursor.execute("SELECT photoData, photoID FROM Photos WHERE photoID = {0}".format(selectStatement))
+			return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), mayLike = cursor.fetchall(), auth = True, base64=base64)
+		return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
+	else:
+		cursor = conn.cursor()
+		
+		photoID = request.form
+		res = ""
+  
+		for key in photoID.keys():
+			for value in photoID.getlist(key):
+				res = key
+				if value == 'Add':
+					break 
+				if value == 'Like':		
+					break 
+				if key == 'tagWordAll' and value != '':
+					res = key
+					
+					break
+				if key == 'commentInputAll' and value != '':
+					res = key
+					break
+			else:
+				continue
+			break
+		print(photoID)
+		if res == 'commentInputAll':
+			userID = getUserIdFromEmail(flask_login.current_user.id)
+			comment = request.form.get('commentInputAll')
+			cursor.execute("SELECT email, COUNT(*) AS ccount FROM Comments WHERE textData = '{0}' GROUP BY email ORDER BY ccount DESC".format(comment))
+			data = cursor.fetchall()
+			photo = getAllPhotos(None)
+			
+			return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(),commentsInfo = getPhotoComments(), auth = True, commentFilter = data, base64=base64)
+		elif res == 'tagWordAll':
+			value = request.form.get('tagWordAll')
+			photo = getAllPhotos(value)
+			return render_template('allPhotos.html', allPhotos = photo, popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
+		if res[0:3] == 'Com':
+			comment = request.form.get("Text{0}".format(res[3:]))
+			print(comment)
+			print(res[3:])
+			if comment != None:
+				cursor.execute("SELECT comments FROM Photos WHERE photoID = '{0}'".format(res[3:]))
+				oldComment = cursor.fetchall()
+				newComment = ""
+				for i in oldComment:
+					if i[0] == None:
+						newComment =  "" + "*" + comment
+					else:
+						newComment =  "{0}".format(i[0]) + "*" + comment
+				commentID = uuid.uuid4().int & (1<<16)-1
+				cursor.execute("UPDATE Photos SET comments = '{0}' WHERE photoID = '{1}'".format(newComment, res[3:])) 
+				cursor.execute("SELECT userID FROM Photos WHERE photoID = '{0}'".format(res[3:]))
+				owner = cursor.fetchall()
+				cursor.execute("SELECT email FROM RegisteredUsers WHERE userID = '{0}'".format(owner[0][0]))
+				getEmail = cursor.fetchall()
+				print(getEmail)
+				if flask_login.current_user.is_authenticated == False:
+					cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, ownerID, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}')".format(commentID, comment, res[3:], "0", owner[0][0],date.today()))
+				else:
+					if getEmail[0][0] == flask_login.current_user.id:
+						return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
+					cursor.execute("INSERT INTO Comments(commentID, textData, photoID, email, ownerID, commentDate) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}')".format(commentID, comment, res[3:], flask_login.current_user.id, owner[0][0], date.today()))
+				conn.commit()
+		else:
+			cursor.execute("SELECT numOfLiked FROM Photos WHERE photoID = '{0}'".format(res))
+			likes = cursor.fetchall()[0][0]
+			cursor.execute("SELECT email FROM LikedPhotos WHERE photoID = '{0}'".format(res))
+			users = cursor.fetchall()
+			
+			for i in users:
+				if i[0] == flask_login.current_user.id:
+					return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
+			if likes == None:
+				likes = 1
+			else:
+				likes += 1
+				
+			cursor.execute("UPDATE Photos SET numOfLiked = '{0}' WHERE photoID = '{1}'".format(likes, res))
+			cursor.execute("INSERT INTO LikedPhotos (photoID, email) VALUES ('{0}', '{1}')".format(res, flask_login.current_user.id))
+			conn.commit()
+		return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
+
+@app.route('/albums', methods = ['GET', 'POST'])
 def albums():
 	if flask_login.current_user.is_authenticated == False:
 		print("We show all albums")
 		return render_template('albums.html', allAlbums = getAllAlbums())
 	else:
 		userID = getUserIdFromEmail(flask_login.current_user.id)
-	return render_template('albums.html', myalbums = getUsersAlbums(userID))
-
+		if request.method == 'POST':
+			data = request.form
+			res = ""
+			val = ""
+			print(data)
+			for key in data.keys():
+				for value in data.getlist(key):
+					res = key
+					val = value
+			if val == "Delete This Album":
+				cursor = conn.cursor()
+				cursor.execute("SELECT photoID FROM Photos WHERE albumID = '{0}'".format(res))
+				photoIDs = cursor.fetchall()
+				print(photoIDs)
+				print(photoIDs[0])
+				for x in photoIDs:
+					cursor.execute("DELETE FROM LikedPhotos WHERE photoID = '{0}'".format(x[0]))
+					cursor.execute("DELETE FROM Comments WHERE photoID = '{0}'".format(x[0]))
+					cursor.execute("DELETE FROM Photos WHERE photoID = '{0}'".format(x[0]))
+				cursor.execute("DELETE FROM Albums WHERE albumID = '{0}'".format(res))				
+				conn.commit()
+				# cursor.execute("DELETE FROM Albums WHERE albumID = '{0}'".format(res))
+				# cursor.execute("DELETE FROM Photos WHERE albumID = '{0}'".format(res))
+				# cursor.commit()
+				flash('You have sucessfully deleted your album along with all of its photos!')
+				return render_template('albums.html', myAlbums = getUsersAlbums(userID))
+		return render_template('albums.html', myAlbums = getUsersAlbums(userID))
 
 @app.route('/albums/<albumID>')
 def alltheAlbums(albumID):
-	return render_template('albums.html', messages = "These are all the public albums!")
+	return render_template('albumPictures.html', albumID = albumID, albumPictures = getUserPhotosinAlbum(albumID), base64=base64)
 
 @app.route("/allAlbums")
 def allAlbums():
 	return render_template('albums.html', allAlbums = getAllAlbums())
 
-@app.route("/newAlbum")
-@flask_login.login_required
+@app.route("/newAlbum", methods = ['GET', 'POST'])
 def newAlbum():
-	if request.method == 'POST':
+	if flask_login.current_user.is_authenticated == False:
+		return render_template('unauth.html')
+	else: 
 		ownerID = getUserIdFromEmail(flask_login.current_user.id)
-		albumName = request.form.get['albumName']
-		dateOfCreation = date.today()
-		numPhotos = 0
-		numOfLiked = 0
-		imgfile = request.files['photo']
-		# caption = request.form.get('caption')
-		# photo_data =imgfile.read()
-
-		c1 = conn.cursor()
-		albumID = uuid.uuid4().int & (1<<16)-1
-		cursor = conn.cursor()
-		cursor.execute('''INSERT INTO Albums (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked ) VALUES (%s, %s, %s, %s, %s, %s )''', (albumID, albumName, ownerID, dateOfCreation, numPhotos, numOfLiked))
-		conn.commit()
-		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(ownerID), base64=base64)
-		#The method is GET so we return a  HTML form to upload the a photo.
-	else:
-		return render_template('albums.html')
-	return render_template('newAlbum.html', messages = "These are all the public albums!")
+		if request.method == 'POST':
+			photoID = request.form #[photoID, ADD]
+			print(photoID)
+			res = ""
+			val = ""
+			newAlbumID = uuid.uuid4().int & (1<<16)-1
+			for key in photoID.keys():
+				for value in photoID.getlist(key):
+					res = key
+					val = value
+					if res == "albumName":
+						albumName = val
+						dateOfCreation = date.today()
+						cursor = conn.cursor()
+						cursor.execute('''INSERT INTO Albums (albumID, albumName, ownerID, dateOfCreation) VALUES (%s, %s, %s, %s)''', (newAlbumID, albumName, ownerID, dateOfCreation))
+						conn.commit()
+					if val == "Add":
+						cursor = conn.cursor()
+						cursor.execute("UPDATE Photos SET albumID = '{0}' WHERE photoID = '{1}'".format(newAlbumID, res))
+						conn.commit()
+			return render_template('albumPictures.html', albumID = newAlbumID, albumPictures = getUserPhotosinAlbum(newAlbumID), base64=base64)
+			#The method is GET so we return a  HTML form to upload the a photo.
+		else:
+			return render_template('newAlbum.html', photos = getUsersPhotos(ownerID, None), base64=base64)
+		
+@app.route("/Leaderboard")
+def topContributors():
+	updateContributionScore()
+	cursor = conn.cursor()
+	cursor.execute("SELECT firstName, lastName, contributionScore FROM RegisteredUsers ORDER BY contributionScore DESC")
+	data = cursor.fetchall()
+	print(data)
+	return render_template('topContributors.html', data = data)
 
 if __name__ == "__main__":
 	#this is invoked when in the shell  you run

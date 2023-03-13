@@ -13,7 +13,19 @@
             <h3>Your Friend's Email</h3>
             <form method="post" enctype="multipart/form-data" action="/friends">
                 <input type="text" name="caption" required='true' method = 'post'/><br/>
-                <text name = 'captions'> hi </text>
+                <text name = 'captions'> </text>
                 <input type="submit" value="Add Friend">
-            </form>
+            </form> <br>
     </body>
+
+    {% if friendRecc %}
+        <div> Recommended Friends: </br>
+        {% for recc in friendRecc %}
+            <div> {{recc[0]}} {{recc[1]}} {{recc[2]}} </br>
+        {% endfor %}         
+    {% endif %}
+
+    <ul>
+        <li><a href='/logout'>Logout</a></li>
+        <li><a href='/'>Home</a></li>
+    </ul>
