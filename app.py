@@ -136,7 +136,7 @@ def friends():
                 cursor.execute("SELECT * FROM Friends WHERE friendEmail ='{0}'".format(potential[x][2]))
                 friendResult = cursor.fetchall()
                 print("True if friends:" + str(friendResult))
-                if len(friendResult) != 0:
+                if len(friendResult) == 0:
                     temp = friendRecc + tuple(potential[x])
                     friendRecc = temp
                     print("This is friendRecc:" + str(friendRecc))
@@ -432,7 +432,7 @@ def allPhotos():
 			for j in l:
 				if listOfIds.count(j[0]) == 0:
 					listOfIds.append(j[0])
-
+		
 		
 		selectStatement = ""
 		val = 0
@@ -444,9 +444,23 @@ def allPhotos():
 				val +=1
 				selectStatement +=  "{0}".format(listOfIds[i]) + ' OR photoID = '
 		if val > 0:
-			print('here')
 			cursor.execute("SELECT photoData, photoID FROM Photos WHERE photoID = {0}".format(selectStatement))
-			return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), mayLike = cursor.fetchall(), auth = True, base64=base64)
+			res1 = cursor.fetchall()
+			cursor.execute("SELECT photoID FROM LikedPhotos WHERE email = '{0}'".format(flask_login.current_user.id))
+			res2 = cursor.fetchall()
+			res = []
+			for i in res1:
+				val = True
+				for j in res2:
+					print(i[1])
+					print(j[0])
+					if i[1] == j[0]:
+						val = False
+
+				if val:
+					res.append(i)
+			
+			return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), mayLike = res, auth = True, base64=base64)
 		return render_template('allPhotos.html', allPhotos = getAllPhotos(None), popularTags = getMostPopularTags(), commentsInfo = getPhotoComments(), auth = True, base64=base64)
 	else:
 		cursor = conn.cursor()
